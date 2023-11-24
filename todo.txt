@@ -1,0 +1,25 @@
+task:
+- draw only grid
+- fillpolygon filling any polygon
+x jak podniesiesz jeden punkt to trojkat na przeciwko robi dziwnie
+x normalmaps
+x texture
+
+refactor:
+- static fields in TGrid should probably be instance
+- should texture be public? who should own it?
+- methods for changing slider values easily because jfc
+
+optimalization:
+- improve bresenham 
+- use more or less threads 
+
+prettization:
+- ui
+- grid points check for contrast
+- normal vectors as arrows
+- make fukin animation smooth
+
+ux:
+- drag points
+- only images to select files

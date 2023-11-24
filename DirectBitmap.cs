@@ -25,7 +25,14 @@ namespace lab2
         {
             Width = width;
             Height = height;
+
             Clear();
+        }
+
+        public DirectBitmap(Image image, int width, int height) : this(width, height)
+        {
+            using (var g = Graphics.FromImage(Bitmap))
+                g.DrawImage(image, 0, 0, Width, Height);
         }
 
         public void Clear()
@@ -59,7 +66,6 @@ namespace lab2
             Bitmap.Dispose();
             BitsHandle.Free();
         }
-
         public void DrawFastLine(int x1, int y1, int x2, int y2, Color? _color = null)
         {
             Color color = _color == null ? Color.Black : (Color)_color;
@@ -67,41 +73,33 @@ namespace lab2
             int dx = x2 - x1;
             int dy = y2 - y1;
 
-            int sgndx = (dx == 0) ? 0 : (dx > 0) ? 1 : -1;
-            int sgndy = (dy == 0) ? 0 : (dy > 0) ? 1 : -1;
+            int sgndx = (dx >= 0) ? 1 : -1;
+            int sgndy = (dy >= 0) ? 1 : -1;
+            dx = sgndx * dx;
+            dy = sgndy * dy;
 
-            int h;
-            int xDiag = 0;
-            int yDiag = 0;
-
-            if (sgndx * dx >= sgndy * dy)
-            {
-                h = 2;
-                xDiag = 1;
-            }
+            if (dx >= dy)
+                Bresenham(x1, y1, dx, dy, sgndx, sgndy, (x, y) => SetPixel(x, y, color));
             else
-            {
-                h = 1;
-                yDiag = 1;
-            }
-
-            int dStr = 2 * (dy * sgndx * (h - 1) - dx * sgndy * (2 - h));
-            int dDiag = 2 * (dy * sgndx - dx * sgndy);
-
-            int d = dy * sgndx * h - dx * sgndy * (3 - h);
+                Bresenham(y1, x1, dy, dx, sgndy, sgndx, (x, y) => SetPixel(y, x, color));
+        }
+        
+        private void Bresenham(int x1, int y1, int dx, int dy, int sgndx, int sgndy, Action<int, int> setter)
+        {
+            int dStr = 2 * dy;
+            int dDiag = 2 * (dy - dx);
+            int d = 2 * dy - dx;
 
             int x = x1;
             int y = y1;
 
-            SetPixel(x, y, color);
-            while ((xDiag == 1 && ((x1 < x2 && x < x2) || (x1 > x2 && x > x2))) ||
-                (yDiag == 1 && ((y1 < y2 && y < y2) || (y1 > y2 && y > y2))))
+            setter(x, y);
+            for (int i = 0; i <= dx; ++i)
             {
-                if ((xDiag == 1 && d * sgndx * sgndy < 0) || (yDiag == 1 && d * sgndx * sgndy > 0))
+                if (d < 0)
                 {
                     d += dStr;
-                    x += sgndx * xDiag;
-                    y += sgndy * yDiag;
+                    x += sgndx;
                 }
                 else
                 {
@@ -109,7 +107,9 @@ namespace lab2
                     x += sgndx;
                     y += sgndy;
                 }
-                SetPixel(x, y, color);
+                
+                if (x < Width && y < Height && x > 0 && y > 0)
+                    setter(x, y);
 
             }
         }
@@ -195,7 +195,7 @@ namespace lab2
                 for (int i = 0; i + 1 < AET.Count; i += 2)
                 {
                     for (int x = (int)AET[i].x; x <= AET[i + 1].x; x++)
-                    { 
+                    {
                         SetPixel(x, y, TriangleGrid.GetColor(V, x, y));
                     }
                 }

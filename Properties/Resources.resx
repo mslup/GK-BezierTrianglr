@@ -117,4 +117,71 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="BricksNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\Bricks.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="BrickWallNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\BrickWall.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="BrickWallT" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Textures\BrickWallT.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="CirclesNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\Circles.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="CoffeeNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\Coffee.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="CoffeeT" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Textures\CoffeeT.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ConcreteNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\Concrete.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ConcreteT" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Textures\ConcreteT.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="DogT" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Textures\DogT.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="FabricNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\Fabric.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="FabricT" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Textures\FabricT.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="FaceNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\Face.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="FurNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\Fur.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="FurT" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Textures\FurT.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="MetalNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\Metal.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="MetalT" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Textures\MetalT.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="MoonNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\Moon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="MudNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\Mud.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="MudT" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Textures\MudT.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ShapesNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\Shapes.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="TerracottaNM" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Normal maps\Terracotta.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="TerracottaT" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\Textures\TerracottaT.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
 using System.IO.IsolatedStorage;
 using static lab2.Trianglr;
 
@@ -14,24 +15,44 @@ namespace lab2
         public float verticalTriangleStep;
         public float horizontalTriangleStep;
 
-        public List<float> horizontalTrianglePoints = new List<float>();
-        public List<float> verticalTrianglePoints = new List<float>();
+        public float[] horizontalTrianglePoints = new float[1];
+        public float[] verticalTrianglePoints = new float[1];
 
         private Vertex[,] grid;
 
-        public TriangleGrid(int size)
+        public static Point3D lightSourcePos = new Point3D(0.5f, 0.5f, 1.0f);
+        public static Point3D lightSourceColor = new Point3D(1, 1, 1);
+        public static Point3D objectColor = new Point3D(0.5f, 0.5f, 0.5f);
+
+        public static int textureFlag = 0;
+        public static int normalMapFlag = 0;
+
+        public static float kD = 1;
+        public static float kS = 0.5f;
+        public static int m = 50;
+
+        public bool showNormalVectors;
+        public bool showTriangleGrid;
+
+        public TriangleGrid(int size, bool showTriangleGrid, bool showNormalVectors)
         {
             this.size = size;
             CalculateHorizontal(HorizontalDensity);
             CalculateVertical(VerticalDensity);
             CalculateVertexGrid();
+
+            this.showTriangleGrid = showTriangleGrid;
+            this.showNormalVectors = showNormalVectors;
         }
 
         public void DrawTriangleGrid(DirectBitmap bmp)
         {
-            bmp.Clear();
+            //bmp.Clear();
             DrawTriangleGridFilled(bmp);
-            DrawTriangleGridOutline(bmp);
+            if (showTriangleGrid)
+                DrawTriangleGridOutline(bmp);
+            if (showNormalVectors)
+                DrawNormalVectors(bmp);
         }
 
         public void CalculateVertexGrid()
@@ -57,25 +78,28 @@ namespace lab2
         private void CalculateHorizontal(int density)
         {
             HorizontalDensity = density;
-            horizontalTrianglePoints.Clear();
+            horizontalTrianglePoints = new float[HorizontalDensity + 2];
             horizontalTriangleStep = 1.0f / HorizontalDensity;
 
-            for (int j = 0; j <= HorizontalDensity + 1; j++)
+            //Parallel.For(0, HorizontalDensity + 2, j =>
+            for (int j = 0; j < HorizontalDensity + 2; ++j)
             {
-                horizontalTrianglePoints.Add(j * horizontalTriangleStep);
+                horizontalTrianglePoints[j] = j * horizontalTriangleStep;
             }
         }
 
         private void CalculateVertical(int density)
         {
             VerticalDensity = density;
-            verticalTrianglePoints.Clear();
+            verticalTrianglePoints = new float[VerticalDensity + 2];
             verticalTriangleStep = 1.0f / VerticalDensity;
 
-            for (int i = 0; i <= VerticalDensity + 1; i++)
+            //Parallel.For(0, VerticalDensity + 1, i =>
+            for (int i = 0; i < VerticalDensity + 2; ++i)
             {
-                verticalTrianglePoints.Add(i * verticalTriangleStep);
+                verticalTrianglePoints[i] = i * verticalTriangleStep;
             }
+            
         }
 
         public void UpdateVertically(int density)
@@ -123,12 +147,21 @@ namespace lab2
                 }
             }
 
+        }
+
+        private void DrawNormalVectors(DirectBitmap bmp)
+        {
+            //Parallel.For(0, VerticalDensity, i =>
             for (int i = 0; i <= VerticalDensity; i++)
             {
+                //Parallel.For(0, HorizontalDensity, j =>
                 for (int j = 0; j <= HorizontalDensity; j++)
                 {
-                    float x = grid[i, j].N.X;
-                    float y = grid[i, j].N.Y;
+                    var N = GetModNormalVector((grid[i, j].N.X, grid[i, j].N.Y, grid[i, j].N.Z),
+                        (int)(grid[i, j].x * CanvasSize),
+                        (int)(grid[i, j].y * CanvasSize));
+                    float x = N.x;
+                    float y = N.y;
 
                     float magn = (float)Math.Sqrt(x * x + y * y);
 
@@ -153,23 +186,25 @@ namespace lab2
                         (int)((grid[i, j].y + ny) * CanvasSize),
                         Color.Yellow);
                 }
+                //);
             }
+            //);
         }
 
         private void DrawTriangleGridFilled(DirectBitmap bmp)
         {
-            for (int i = 0; i < VerticalDensity; i++)
-            //Parallel.For(0, VerticalDensity, i =>
+            //for (int i = 0; i < VerticalDensity; i++)
+            Parallel.For(0, VerticalDensity, i =>
             {
-                for (int j = 0; j < HorizontalDensity; j++)
-                //Parallel.For(0, HorizontalDensity, j =>
+                //for (int j = 0; j < HorizontalDensity; j++)
+                Parallel.For(0, HorizontalDensity, j =>
                 {
                     FillTriangle(bmp, i, j, 1, 0); //bottom
                     FillTriangle(bmp, i, j, 0, 1); //top
                 }
-                //);
+                );
             }
-            //);
+            );
         }
 
         private void FillTriangle(DirectBitmap bmp, int vIndex, int hIndex, int v, int h)
@@ -197,28 +232,6 @@ namespace lab2
             return (lambda1, lambda2, lambda3);
         }
 
-        public static Color GetColor((int x, int y)[] P, int x, int y)
-        {
-            float x1 = P[0].x;
-            float y1 = P[0].y;
-            float x2 = P[1].x;
-            float y2 = P[1].y;
-            float x3 = P[2].x;
-            float y3 = P[2].y;
-
-            float detT = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3);
-
-            float lambda1 = 1.0f * ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / detT;
-            float lambda2 = 1.0f * ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / detT;
-            float lambda3 = 1 - lambda1 - lambda2;
-
-            return Color.FromArgb(
-                (int)Math.Clamp(lambda1 * 255, 0, 255),
-                (int)Math.Clamp(lambda2 * 255, 0, 255),
-                (int)Math.Clamp(lambda3 * 255, 0, 255)
-                );
-        }
-
         public static Color GetBarycentricColor(Vertex[] P, int x, int y)
         {
             (float r, float g, float b) = CalculateBarycentricCoords(P, 1.0f * x / CanvasSize, 1.0f * y / CanvasSize);
@@ -230,17 +243,18 @@ namespace lab2
                 );
         }
 
-        static Point3D lightPos = new Point3D(0.5f, 0.5f, 1.0f);
-        static Point3D lightColor = new Point3D(1, 1, 1);
-        static Point3D objectColor = lightColor; //new Point3D(0.75f, 0.75f, 0.75f);
-
         public static Color GetColor(Vertex[] P, int x, int y)
         {
-            float kD = 0.5f, kS = 0.5f;
-            int m = 100;
-
             float X = 1.0f * x / CanvasSize;
             float Y = 1.0f * y / CanvasSize;
+
+            //if (debugPoint != null && 
+            //    Math.Abs(x - ((Point)debugPoint).X) < 1e-3 && 
+            //    Math.Abs(y - ((Point)debugPoint).Y) < 1e-3)
+            //{
+            //    debugPoint = null;
+            //    //Debugger.Break(); 
+            //}
 
             (float lambda1, float lambda2, float lambda3) =
                 CalculateBarycentricCoords(P, X, Y);
@@ -251,60 +265,57 @@ namespace lab2
                 lambda3 * P[2].z
             );
 
-            (float x, float y, float z) lightVector = (
-                lightPos.X - pointCoords.x,
-                lightPos.Y - pointCoords.y,
-                lightPos.Z - pointCoords.z
-            );
+            (float x, float y, float z) lightVector = Normalize((
+                lightSourcePos.X - pointCoords.x,
+                lightSourcePos.Y - pointCoords.y,
+                lightSourcePos.Z - pointCoords.z
+            ));
 
-            lightVector = Normalize(lightVector);
-
-            (float x, float y, float z) normalVector = (
+            (float x, float y, float z) normalVector = Normalize((
                 lambda1 * P[0].N.X + lambda2 * P[1].N.X + lambda3 * P[2].N.X,
                 lambda1 * P[0].N.Y + lambda2 * P[1].N.Y + lambda3 * P[2].N.Y,
                 lambda1 * P[0].N.Z + lambda2 * P[1].N.Z + lambda3 * P[2].N.Z
-            );
+            ));
 
-            normalVector = Normalize(normalVector);
+            normalVector = GetModNormalVector(normalVector, x, y);
 
             float cosNL = normalVector.x * lightVector.x +
                 normalVector.y * lightVector.y +
                 normalVector.z * lightVector.z;
 
             (float x, float y, float z) eyeVector = (0, 0, 1);
-            (float x, float y, float z) reflectionVector = (
-                2 * cosNL * (normalVector.x - lightVector.x),
-                2 * cosNL * (normalVector.y - lightVector.y),
-                2 * cosNL * (normalVector.z - lightVector.z)
-            );
-            reflectionVector = Normalize(reflectionVector);
-
+            (float x, float y, float z) reflectionVector = Normalize((
+                2 * cosNL * normalVector.x - lightVector.x,
+                2 * cosNL * normalVector.y - lightVector.y,
+                2 * cosNL * normalVector.z - lightVector.z
+            ));
 
             cosNL = Math.Clamp(cosNL, 0, 1);
 
             float cosVR = eyeVector.x * reflectionVector.x +
                 eyeVector.y * reflectionVector.y +
                 eyeVector.z * reflectionVector.z;
+
             cosVR = Math.Clamp(cosVR, 0, 1);
 
-            // debug
-            //var arr = new (float x, float y, float z)[] { pointCoords, lightVector, normalVector, reflectionVector };
-            //foreach (var i in arr)
-            //{
-            //    Debug.Assert(i.x >= -1 && i.y >= -1 && i.z >= -1
-            //        && i.x <= 1 && i.y <= 1 && i.z <= 1);
-            //}
+            float diffuseCoef = kD * cosNL;
+            float specularCoef = kS * (float)Math.Pow(cosVR, m);
 
-            float R = kD * lightColor.X * objectColor.X * cosNL +
-                kS * lightColor.X * objectColor.X * (float)Math.Pow(cosVR, m);
-            float G = kD * lightColor.Y * objectColor.Y * cosNL +
-                kS * lightColor.Y * objectColor.Y * (float)Math.Pow(cosVR, m);
-            float B = kD * lightColor.Z * objectColor.Z * cosNL +
-                kS * lightColor.Z * objectColor.Z * (float)Math.Pow(cosVR, m);
+            int textureColor = textureFlag * Texture.GetPixel(x, y).ToArgb();
+            float textureR = ((textureColor >> 16) & 0xFF) / 255.0f;
+            float textureG = ((textureColor >> 8) & 0xFF) / 255.0f;
+            float textureB = (textureColor & 0xFF) / 255.0f;
 
-            //Point3D C = kD * lightColor * objectColor * (normalVector * lightVector).Clamp(0, 1) +
-            //    kS * lightColor * objectColor * (eyeVector * RVector).Clamp(0, 1);
-            //Point3D Cn = (255 * C).Clamp(0, 255);
+            float objectColorX = (1 - textureFlag) * objectColor.X + textureFlag * textureR;
+            float objectColorY = (1 - textureFlag) * objectColor.Y + textureFlag * textureG;
+            float objectColorZ = (1 - textureFlag) * objectColor.Z + textureFlag * textureB;
+
+            float R = diffuseCoef * lightSourceColor.X * objectColorX +
+                specularCoef * lightSourceColor.X * objectColorX;
+            float G = diffuseCoef * lightSourceColor.Y * objectColorY +
+                specularCoef * lightSourceColor.Y * objectColorY;
+            float B = diffuseCoef * lightSourceColor.Z * objectColorZ +
+                specularCoef * lightSourceColor.Z * objectColorZ;
 
             return Color.FromArgb(
                 (int)Math.Clamp(R * 255, 0, 255),
@@ -327,48 +338,39 @@ namespace lab2
                 return (0, 0, 0);
         }
 
-        //public static Color GetColor(Vertex[] P, int x, int y)
-        //{
-        //    float kD = 1, kS = 1;
-        //    float X = 1.0f * x / CanvasSize;
-        //    float Y = 1.0f * y / CanvasSize;
+        private static (float x, float y, float z) GetModNormalVector((float x, float y, float z) v, int x, int y)
+        {
+            if (normalMapFlag == 0)
+                return v;
 
-        //    Point3D lightColor = new Point3D(1, 1, 1);
-        //    Point3D objectColor = new Point3D(0.5f, 0.5f, 0.5f);
+            int normalMapVector = normalMapFlag * NormalMap.GetPixel(x, y).ToArgb();
+            float normalMapR = ((normalMapVector >> 16) & 0xFF) / 127.5f - 1;
+            float normalMapG = ((normalMapVector >> 8) & 0xFF) / 127.5f - 1;
+            float normalMapB = (normalMapVector & 0xFF) / 127.5f - 1;
 
-        //    (float lambda1, float lambda2, float lambda3) =
-        //        CalculateBarycentricCoords(P, X, Y);
+            float Nx = v.x;
+            float Ny = v.y;
+            float Nz = v.z;
 
-        //    Point3D lightPos = new Point3D(0.5f, 0.5f, 1.5f);
-        //    Point3D pointCoords = new Point3D(X, Y,
-        //        lambda1 * P[0].z +
-        //        lambda2 * P[1].z +
-        //        lambda3 * P[2].z
-        //    );
+            (float x, float y, float z) B;
 
-        //    Point3D lightVector = lightPos - pointCoords;
-        //    lightVector.Normalize();
-        //    Point3D normalVector =
-        //        lambda1 * P[0].N +
-        //        lambda2 * P[1].N +
-        //        lambda3 * P[2].N;
-        //    Point3D eyeVector = new Point3D(0, 0, 1);
-        //    Point3D R = 2 * (normalVector - lightVector);
-        //    int m = 50;
+            if (Math.Abs(Nx) < 1e-6 && Math.Abs(Ny) < 1e-6 && Math.Abs(Nz - 1) < 1e-6)
+                B = (0, 1, 0);
+            else
+                B = (Ny, -Nx, 0);
 
-        //    Point3D C = kD * lightColor * objectColor * (normalVector * lightVector).Clamp(0, 1) +
-        //        kS * lightColor * objectColor * (eyeVector * R).Clamp(0, 1);
+            (float x, float y, float z) T =
+                (B.y * Nz - B.z * Ny,
+                B.z * Nx - B.x * Nz,
+                B.x * Ny - B.y * Nx);
 
-        //    Point3D Cn = (255 * C).Clamp(0, 255);
+            (float x, float y, float z)[] M = { T, B, v };
 
-        //    //return Color.FromArgb(
-        //    //    255 / 2, 255/ 2, 255/2
-        //    //    );
+            float resultX = M[0].x * normalMapR + M[1].x * normalMapG + M[2].x * normalMapB;
+            float resultY = M[0].y * normalMapR + M[1].y * normalMapG + M[2].y * normalMapB;
+            float resultZ = M[0].z * normalMapR + M[1].z * normalMapG + M[2].z * normalMapB;
 
-        //    return Color.FromArgb(
-        //        (int)Cn.X,
-        //        (int)Cn.Y,
-        //        (int)Cn.Z);
-        //}
+            return (resultX, resultY, resultZ);
+        }
     }
 }
