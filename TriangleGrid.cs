@@ -39,6 +39,7 @@ namespace lab2
         public SurfaceMaterial material;
 
         public static bool zuchowski;
+        public static int invertYnormalMap;
 
         public TriangleGrid(int size, bool showTriangleGrid, bool showNormalVectors, 
             Light light, SurfaceMaterial material)
@@ -194,7 +195,7 @@ namespace lab2
                         (int)(grid[i, j].y * CanvasSize), 
                         (grid[i, j].P.X, grid[i, j].P.Y, grid[i, j].P.Z));
 
-                    (float nx, float ny, _) = Normalize(N);
+                    (float nx, float ny, float nz) = Normalize(N);
                     nx /= 10;
                     ny /= 10;
 
@@ -203,6 +204,39 @@ namespace lab2
                         Math.Clamp((int)(grid[i, j].y * CanvasSize), 0, CanvasSize),
                         Math.Clamp((int)((grid[i, j].x + nx) * CanvasSize), 0, CanvasSize),
                         Math.Clamp((int)((grid[i, j].y + ny) * CanvasSize), 0, CanvasSize),
+                        Color.Yellow);
+
+                    float theta = (float)Math.Atan2(ny, nx);
+                    float cosTheta = (float)Math.Cos(theta);
+                    float sinTheta = (float)Math.Sin(theta);
+                    float k = 0.1f;
+                    float l = (float)Math.Sqrt(nx * nx + ny * ny);
+                    float alpha = (float)Math.PI / 5;
+                    float tga = (float)Math.Tan(alpha);
+                    float dx = -k * l;
+                    float dy = k * l * tga;
+                    float cosGamma = nx / l;
+                    float sinGamma = ny / l;
+
+                    float dx1 = cosGamma * dx - sinGamma * dy;
+                    float dy1 = sinGamma * dx + cosGamma * dy;
+                    float dx2 = cosGamma * dx + sinGamma * dy;
+                    float dy2 = sinGamma * dx - cosGamma * dy;
+
+                    
+
+                    bmp.DrawFastLine(
+                        Math.Clamp((int)((grid[i, j].x + nx) * CanvasSize), 0, CanvasSize),
+                        Math.Clamp((int)((grid[i, j].y + ny) * CanvasSize), 0, CanvasSize),
+                        Math.Clamp((int)((grid[i, j].x + nx + dx1) * CanvasSize), 0, CanvasSize),
+                        Math.Clamp((int)((grid[i, j].y + ny + dy1) * CanvasSize), 0, CanvasSize),
+                        Color.Yellow);
+
+                    bmp.DrawFastLine(
+                        Math.Clamp((int)((grid[i, j].x + nx) * CanvasSize), 0, CanvasSize),
+                        Math.Clamp((int)((grid[i, j].y + ny) * CanvasSize), 0, CanvasSize),
+                        Math.Clamp((int)((grid[i, j].x + nx + dx2) * CanvasSize), 0, CanvasSize),
+                        Math.Clamp((int)((grid[i, j].y + ny + dy2) * CanvasSize), 0, CanvasSize),
                         Color.Yellow);
                 }
                 //);
@@ -382,7 +416,7 @@ namespace lab2
 
             int normalMapVector = NormalMap.GetPixel(x, y).ToArgb();
             float normalMapR = ((normalMapVector >> 16) & 0xFF) / 127.5f - 1;
-            float normalMapG = (((normalMapVector >> 8) & 0xFF) / 127.5f - 1);
+            float normalMapG = invertYnormalMap * (((normalMapVector >> 8) & 0xFF) / 127.5f - 1);
             float normalMapB = (normalMapVector & 0xFF) / 127.5f - 1;
 
             float Nx = v.x;

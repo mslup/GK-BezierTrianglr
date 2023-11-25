@@ -584,7 +584,7 @@
             normalMapGroupBox.Controls.Add(panelWithNormalMapCheckBox);
             normalMapGroupBox.Location = new Point(285, 297);
             normalMapGroupBox.Name = "normalMapGroupBox";
-            normalMapGroupBox.Size = new Size(289, 280);
+            normalMapGroupBox.Size = new Size(289, 262);
             normalMapGroupBox.TabIndex = 5;
             normalMapGroupBox.TabStop = false;
             normalMapGroupBox.Text = "Normal map";
@@ -704,6 +704,7 @@
             normalMapStandardCheckBox.TabIndex = 2;
             normalMapStandardCheckBox.Text = "Invert normal map Y coordinates";
             normalMapStandardCheckBox.UseVisualStyleBackColor = true;
+            normalMapStandardCheckBox.CheckedChanged += normalMapStandardCheckBox_CheckedChanged;
             // 
             // panelWithNormalMapCheckBox
             // 

@@ -38,7 +38,7 @@ namespace lab2
         {
             InitializeComponent();
 
-            Height = 600;
+            Height = 700;
             CanvasSize = canvas.Size.Height;
             splitContainer.SplitterDistance = canvas.Size.Height;
 
@@ -90,7 +90,10 @@ namespace lab2
             normalMapCheckBox.Checked = false;
             normalMapCheckBox_CheckedChanged();
 
+            TriangleGrid.invertYnormalMap = 1;
 
+            TriangleGrid.zuchowski = true;
+            zuchowskiRadioButton.Checked = true;
         }
 
         private void InitializeLight()
@@ -669,11 +672,24 @@ namespace lab2
         private void kotowskiRadioButton_Click(object sender, EventArgs e)
         {
             TriangleGrid.zuchowski = false;
+            TGrid.DrawTriangleGrid(bmp);
+            canvas.Refresh();
         }
 
         private void zuchowskiRadioButton_Click(object sender, EventArgs e)
         {
             TriangleGrid.zuchowski = true;
+            TGrid.DrawTriangleGrid(bmp);
+            canvas.Refresh();
+
+        }
+
+        private void normalMapStandardCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            TriangleGrid.invertYnormalMap =
+                normalMapStandardCheckBox.Checked ? -1 : 1;
+            TGrid.DrawTriangleGrid(bmp);
+            canvas.Refresh();
         }
     }
 }
