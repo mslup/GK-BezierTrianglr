@@ -46,32 +46,13 @@ namespace lab2
             }
         }
 
-        public static Point3D operator *(Point3D vec1, Point3D vec2)
+        public Color ToColor()
         {
-            return new Point3D(vec1.X * vec2.X, vec1.Y * vec2.Y, vec1.Z * vec2.Z);
-        }
-
-        public static Point3D operator *(float scalar, Point3D vec)
-        {
-            return new Point3D(scalar * vec.X, scalar * vec.Y, scalar * vec.Z);
-        }
-
-        public static Point3D operator -(Point3D vec1, Point3D vec2)
-        {
-            return new Point3D(vec1.X - vec2.X, vec1.Y - vec2.Y, vec1.Z - vec2.Z);
-        }
-
-        public static Point3D operator +(Point3D vec1, Point3D vec2)
-        {
-            return new Point3D(vec1.X + vec2.X, vec1.Y + vec2.Y, vec1.Z + vec2.Z);
-        }
-
-        public Point3D Clamp(float min, float max)
-        {
-            return new Point3D(
-                Math.Clamp(X, min, max),
-                Math.Clamp(Y, min, max),
-                Math.Clamp(Z, min, max));
+            return Color.FromArgb(
+                Math.Clamp((int)(X * 255), 0, 255),
+                Math.Clamp((int)(Y * 255), 0, 255),
+                Math.Clamp((int)(Z * 255), 0, 255)
+                );
         }
     }
 }

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
+using System.DirectoryServices.ActiveDirectory;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -40,6 +42,16 @@ namespace lab2
             Bits = new Int32[Width * Height];
             BitsHandle = GCHandle.Alloc(Bits, GCHandleType.Pinned);
             Bitmap = new Bitmap(Width, Height, Width * 4, PixelFormat.Format32bppPArgb, BitsHandle.AddrOfPinnedObject());
+        }
+
+        public void SetToBlack()
+        {
+            //for (int i = 0; i < Width * Height; ++i)
+            //    Bits[i] = Color.FromArgb(1, 0, 0, 0).ToArgb();
+
+            for (int i = 0; i < Height; ++i)
+                for (int j = 0; j < Width; ++j)
+                    SetPixel(i, j, Color.Black);
         }
 
         public void SetPixel(int x, int y, Color colour)
@@ -82,6 +94,22 @@ namespace lab2
                 Bresenham(x1, y1, dx, dy, sgndx, sgndy, (x, y) => SetPixel(x, y, color));
             else
                 Bresenham(y1, x1, dy, dx, sgndy, sgndx, (x, y) => SetPixel(y, x, color));
+        }
+
+        public void DrawFastLine(int x1, int y1, int x2, int y2, Func<int, int, Color> getColor)
+        {
+            int dx = x2 - x1;
+            int dy = y2 - y1;
+
+            int sgndx = (dx >= 0) ? 1 : -1;
+            int sgndy = (dy >= 0) ? 1 : -1;
+            dx = sgndx * dx;
+            dy = sgndy * dy;
+
+            if (dx >= dy)
+                Bresenham(x1, y1, dx, dy, sgndx, sgndy, (x, y) => SetPixel(x, y, getColor(x, y)));
+            else
+                Bresenham(y1, x1, dy, dx, sgndy, sgndx, (y, x) => SetPixel(x, y, getColor(x, y)));
         }
         
         private void Bresenham(int x1, int y1, int dx, int dy, int sgndx, int sgndy, Action<int, int> setter)

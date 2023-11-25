@@ -13,7 +13,7 @@ namespace lab2
 
         public static int CanvasSize;
         public static Point3D[,] controlPoints = new Point3D[ctrlPtsNo + 1, ctrlPtsNo + 1];
-        private Point3D? clickedPoint = null;
+        private Point3D? selectedPoint = null;
         private Point MousePos;
 
         private TriangleGrid TGrid;
@@ -21,7 +21,18 @@ namespace lab2
         public static DirectBitmap Texture;
         public static DirectBitmap NormalMap;
 
+        private Image stashedTexture;
+        private Image stashedNormalMap;
+
+        public Light light { get; set; }
+        public SurfaceMaterial material;
+
         public bool MovingVertex = false;
+        private bool IsAnimating = false;
+
+        public static bool MeshOnly = false;
+
+        public static int AddNormalVectors = 0;
 
         public Trianglr()
         {
@@ -30,8 +41,6 @@ namespace lab2
             Height = 600;
             CanvasSize = canvas.Size.Height;
             splitContainer.SplitterDistance = canvas.Size.Height;
-            pointHeightSlider.Value = (pointHeightSlider.Maximum + pointHeightSlider.Minimum) / 2;
-            pointHeightSlider.Enabled = false;
 
             for (int i = 0; i <= ctrlPtsNo; i++)
             {
@@ -41,16 +50,66 @@ namespace lab2
                 }
             }
 
-            TGrid = new TriangleGrid(CanvasSize, triangleGridCheckbox.Checked, normalVectorsCheckbox.Checked);
+            TGrid = new TriangleGrid(CanvasSize, triangleGridCheckbox.Checked,
+                normalVectorsCheckbox.Checked, light, material);
+
+            InitializeParameters();
+
+            TGrid.DrawTriangleGrid(bmp);
+
+            textureComboBox.Text = "Choose predefined...";
+
+            //SetNormalMap(Resources.ShapesNM);
+        }
+
+        private void InitializeParameters()
+        {
+            pointHeightSlider.Value = (pointHeightSlider.Maximum + pointHeightSlider.Minimum) / 2;
+            pointHeightSlider.Enabled = false;
 
             horizontalDensitySlider.Value = TGrid.HorizontalDensity;
             verticalDensitySlider.Value = TGrid.VerticalDensity;
 
             bmp = new(CanvasSize + 1, CanvasSize + 1);
             Texture = new(CanvasSize + 1, CanvasSize + 1);
-            TGrid.DrawTriangleGrid(bmp);
+
+            InitializeLight();
+
+            lightColorButton.BackColor = TriangleGrid.lightSourceColor.ToColor();
+
+            InitializeSlider(kDSlider, TriangleGrid.kD);
+            InitializeSlider(kSSlider, TriangleGrid.kS);
+            InitializeSlider(mSlider, TriangleGrid.m);
+
+            objColorRadioButton.Checked = true;
+            objColorRadioButton_CheckedChanged();
+            objectColorButton.BackColor = TriangleGrid.objectColor.ToColor();
 
             animationTimer.Interval = 24;
+
+            normalMapCheckBox.Checked = false;
+            normalMapCheckBox_CheckedChanged();
+
+
+        }
+
+        private void InitializeLight()
+        {
+            TriangleGrid.lightSourcePos = new Point3D(0.5f, 0.5f, 1);
+
+            InitializeSlider(lightXSlider, TriangleGrid.lightSourcePos.X);
+            InitializeSlider(lightYSlider, TriangleGrid.lightSourcePos.Y);
+            InitializeSlider(lightZSlider, TriangleGrid.lightSourcePos.Z);
+        }
+
+        private void InitializeSlider(TrackBar slider, float value)
+        {
+            slider.Value = (int)(value * (slider.Maximum - slider.Minimum) + slider.Minimum);
+        }
+
+        private void InitializeSlider(TrackBar slider, int value)
+        {
+            slider.Value = value;
         }
 
         private void canvas_Paint(object sender, PaintEventArgs e)
@@ -78,28 +137,30 @@ namespace lab2
                 for (int j = 0; j <= ctrlPtsNo; j++)
                 {
                     g.DrawPoint(controlPoints[i, j],
-                        controlPoints[i, j].IsXYCloseToPoint(MousePos),
-                        controlPoints[i, j] == clickedPoint);
+                        controlPoints[i, j].IsXYCloseToPoint(MousePos) ||
+                        (MovingVertex && controlPoints[i, j] == selectedPoint),
+                        controlPoints[i, j] == selectedPoint);
                 }
             }
 
             g.DrawPoint(TriangleGrid.lightSourcePos,
-                TriangleGrid.lightSourcePos.IsXYCloseToPoint(MousePos),
-                TriangleGrid.lightSourcePos == clickedPoint);
+                TriangleGrid.lightSourcePos.IsXYCloseToPoint(MousePos) ||
+                        (MovingVertex && TriangleGrid.lightSourcePos == selectedPoint),
+                TriangleGrid.lightSourcePos == selectedPoint);
 
         }
 
         public static Point? debugPoint = null;
 
-        
+
 
         private void pointHeightScrollBar_ValueChanged(object sender, EventArgs e)
         {
-            if (clickedPoint == null)
+            if (selectedPoint == null)
                 return;
 
-            clickedPoint.Z = pointHeightSlider.Value / 100.0f;
-            ZLabel.Text = String.Format("{0:F}", clickedPoint.Z);
+            selectedPoint.Z = pointHeightSlider.Value / 100.0f;
+            ctrlPointZLabel.Text = String.Format("{0:F}", selectedPoint.Z);
 
             TGrid.CalculateVertexGrid();
             TGrid.DrawTriangleGrid(bmp);
@@ -107,7 +168,7 @@ namespace lab2
             canvas.Refresh();
         }
 
-       
+
         private void horizontalDensityScrollBar_ValueChanged(object sender, EventArgs e)
         {
             horizontalDensityLabel.Text = $"{horizontalDensitySlider.Value}";
@@ -135,12 +196,15 @@ namespace lab2
                 lightXSlider.Enabled = false;
                 lightYSlider.Enabled = false;
 
+                IsAnimating = true;
+
                 animationTimer.Start();
             }
             else
             {
                 lightXSlider.Enabled = true;
                 lightYSlider.Enabled = true;
+                IsAnimating = false;
 
                 animationTimer.Stop();
             }
@@ -148,14 +212,22 @@ namespace lab2
 
         private void lightXSlider_ValueChanged(object sender, EventArgs e)
         {
-            TriangleGrid.lightSourcePos.X = lightXSlider.Value / 100.0f;
+            if (!IsAnimating && !MovingVertex)
+                TriangleGrid.lightSourcePos.X = lightXSlider.Value / 100.0f;
+
+            lightXLabel.Text = string.Format("X: {0:F}", TriangleGrid.lightSourcePos.X);
+
             TGrid.DrawTriangleGrid(bmp);
             canvas.Refresh();
         }
 
         private void lightYSlider_ValueChanged(object sender, EventArgs e)
         {
-            TriangleGrid.lightSourcePos.Y = lightYSlider.Value / 100.0f;
+            if (!IsAnimating && !MovingVertex)
+                TriangleGrid.lightSourcePos.Y = lightYSlider.Value / 100.0f;
+
+            lightYLabel.Text = string.Format("Y: {0:F}", TriangleGrid.lightSourcePos.Y);
+
             TGrid.DrawTriangleGrid(bmp);
             canvas.Refresh();
         }
@@ -163,6 +235,9 @@ namespace lab2
         private void lightZSlider_ValueChanged(object sender, EventArgs e)
         {
             TriangleGrid.lightSourcePos.Z = lightZSlider.Value / 100.0f;
+
+            lightZLabel.Text = string.Format("Z: {0:F}", TriangleGrid.lightSourcePos.Z);
+
             TGrid.DrawTriangleGrid(bmp);
             canvas.Refresh();
         }
@@ -196,6 +271,7 @@ namespace lab2
                     colorDialog.Color.R / 255.0f,
                     colorDialog.Color.G / 255.0f,
                     colorDialog.Color.B / 255.0f);
+                lightColorButton.BackColor = colorDialog.Color;
             }
             TGrid.DrawTriangleGrid(bmp);
             canvas.Refresh();
@@ -210,9 +286,7 @@ namespace lab2
 
         private void triangleGridCheckbox_CheckedChanged(object sender, EventArgs e)
         {
-            TGrid.showTriangleGrid = triangleGridCheckbox.Checked;
-            TGrid.DrawTriangleGrid(bmp);
-            canvas.Refresh();
+
         }
 
         private void objectColorButton_Click(object sender, EventArgs e)
@@ -223,6 +297,8 @@ namespace lab2
                     colorDialog.Color.R / 255.0f,
                     colorDialog.Color.G / 255.0f,
                     colorDialog.Color.B / 255.0f);
+                objectColorButton.BackColor = colorDialog.Color;
+                objectColorButton.Refresh();
             }
             TGrid.DrawTriangleGrid(bmp);
             canvas.Refresh();
@@ -239,12 +315,16 @@ namespace lab2
             TriangleGrid.lightSourcePos.X = newX;
             TriangleGrid.lightSourcePos.Y = newY;
 
+            lightXLabel.Text = string.Format("X: {0:F}", newX);
+            lightYLabel.Text = string.Format("Y: {0:F}", newY);
+
             lightXSlider.Value = (int)(newX * 100f);
             lightYSlider.Value = (int)(newY * 100f);
 
-            angle += 0.01f;
-            TGrid.DrawTriangleGrid(bmp);
+            angle += 0.05f;//0.9f * timeStep;
+            //TGrid.DrawTriangleGrid(bmp);
             canvas.Invalidate();
+
         }
 
         private void textureButton_Click(object sender, EventArgs e)
@@ -253,6 +333,8 @@ namespace lab2
             {
                 Texture = new DirectBitmap(Image.FromFile(chooseFileDialog.FileName), CanvasSize + 1, CanvasSize + 1);
                 TriangleGrid.textureFlag = 1;
+                stashedTexture = Image.FromFile(chooseFileDialog.FileName);
+                texturePictureBox.Image = stashedTexture;
                 TGrid.DrawTriangleGrid(bmp);
                 canvas.Refresh();
             }
@@ -268,27 +350,34 @@ namespace lab2
 
         private void canvas_MouseMove(object sender, MouseEventArgs e)
         {
+            MousePos = e.Location;
+
             if (MovingVertex == false)
+            {
+                canvas.Refresh();
                 return;
+            }
 
             float newX = 1.0f * e.Location.X / CanvasSize;
             float newY = 1.0f * e.Location.Y / CanvasSize;
 
-            if (clickedPoint != null &&
-                Math.Abs(clickedPoint.X - newX) < 1e-2 &&
-                Math.Abs(clickedPoint.Y - newY) < 1e-2)
+            if (selectedPoint != null &&
+                Math.Abs(selectedPoint.X - newX) < 1e-2 &&
+                Math.Abs(selectedPoint.Y - newY) < 1e-2)
                 return;
 
-            if (clickedPoint == TriangleGrid.lightSourcePos)
+            if (selectedPoint == TriangleGrid.lightSourcePos)
             {
-                //lightXSlider.Value = (int)(TriangleGrid.lightSourcePos.X / lightXSlider.Maximum);
-                //lightYSlider.Value = (int)(TriangleGrid.lightSourcePos.Y / lightYSlider.Maximum);
+                if (IsAnimating) return;
 
-                clickedPoint.X = TriangleGrid.lightSourcePos.X = newX;
-                clickedPoint.Y = TriangleGrid.lightSourcePos.Y = newY;
+                lightXSlider.Value = Math.Clamp((int)(TriangleGrid.lightSourcePos.X * lightXSlider.Maximum), lightXSlider.Minimum, lightXSlider.Maximum);
+                lightYSlider.Value = Math.Clamp((int)(TriangleGrid.lightSourcePos.Y * lightYSlider.Maximum), lightYSlider.Minimum, lightYSlider.Maximum);
+
+                selectedPoint.X = TriangleGrid.lightSourcePos.X = newX;
+                selectedPoint.Y = TriangleGrid.lightSourcePos.Y = newY;
 
                 TGrid.DrawTriangleGrid(bmp);
-                (sender as Control).Invalidate();
+                canvas.Refresh();
                 return;
             }
 
@@ -297,17 +386,22 @@ namespace lab2
                 for (int j = 0; j <= ctrlPtsNo; j++)
                 {
                     // save i, j of clickedPoint
-                    if (controlPoints[i, j] == clickedPoint)
+                    if (controlPoints[i, j] == selectedPoint)
                     {
-                        float newZ = (clickedPoint.Y - 1.0f * e.Location.Y / CanvasSize) * 4;
-                        if (newZ < -1 || newZ > 1)
-                            return;
+                        float newZ = (selectedPoint.Y - 1.0f * e.Location.Y / CanvasSize) * 4;
+                        //if (newZ < -1 || newZ > 1)
+                        //    return;
 
                         controlPoints[i, j].Z = Math.Clamp(newZ, -1, 1);
                         pointHeightSlider.Value = (int)(controlPoints[i, j].Z * (pointHeightSlider.Maximum));
 
-                        TGrid.DrawTriangleGrid(bmp);
-                        (sender as Control).Invalidate();
+                        if (newZ > -1 && newZ < 1)
+                        {
+                            TGrid.DrawTriangleGrid(bmp);
+                            lightSrcGroupBox.Refresh();
+                            canvas.Refresh();
+
+                        }
                         return;
                     }
                 }
@@ -315,19 +409,20 @@ namespace lab2
         }
         private void canvas_MouseUp(object sender, MouseEventArgs e)
         {
+            MousePos = e.Location;
             if (MovingVertex == true)
             {
                 MovingVertex = false;
             }
         }
-       
+
         private void canvas_MouseDown(object sender, MouseEventArgs e)
         {
             MousePos = e.Location;
 
             if (TriangleGrid.lightSourcePos.IsXYCloseToPoint(MousePos))
             {
-                clickedPoint = TriangleGrid.lightSourcePos;
+                selectedPoint = TriangleGrid.lightSourcePos;
 
                 MovingVertex = true;
                 (sender as Control).Invalidate();
@@ -340,13 +435,13 @@ namespace lab2
                 {
                     if (controlPoints[i, j].IsXYCloseToPoint(MousePos))
                     {
-                        clickedPoint = controlPoints[i, j];
+                        selectedPoint = controlPoints[i, j];
 
-                        XLabel.Text = string.Format("{0:F}", clickedPoint.X);
-                        YLabel.Text = string.Format("{0:F}", clickedPoint.Y);
-                        ZLabel.Text = string.Format("{0:F}", clickedPoint.Z);
+                        ctrlPointXLabel.Text = string.Format("{0:F}", selectedPoint.X);
+                        ctrlPointYLabel.Text = string.Format("{0:F}", selectedPoint.Y);
+                        ctrlPointZLabel.Text = string.Format("{0:F}", selectedPoint.Z);
 
-                        pointHeightSlider.Value = (int)(clickedPoint.Z * 100.0);
+                        pointHeightSlider.Value = (int)(selectedPoint.Z * 100.0);
                         pointHeightSlider.Enabled = true;
 
                         MovingVertex = true;
@@ -358,7 +453,7 @@ namespace lab2
                 }
             }
 
-            clickedPoint = null;
+            selectedPoint = null;
 
             /// DEBUG
             //{
@@ -368,9 +463,9 @@ namespace lab2
             //}
             /// DEBUG
 
-            XLabel.Text = "";
-            YLabel.Text = "";
-            ZLabel.Text = "";
+            ctrlPointXLabel.Text = "";
+            ctrlPointYLabel.Text = "";
+            ctrlPointZLabel.Text = "";
 
             pointHeightSlider.Value = (pointHeightSlider.Maximum + pointHeightSlider.Minimum) / 2;
             pointHeightSlider.Enabled = false;
@@ -391,10 +486,194 @@ namespace lab2
         private void SetNormalMap(Image image)
         {
             NormalMap = new DirectBitmap(image, CanvasSize + 1, CanvasSize + 1);
+            stashedNormalMap = image;
+            normalMapPictureBox.Image = image;
             TriangleGrid.normalMapFlag = 1;
             TGrid.DrawTriangleGrid(bmp);
             canvas.Refresh();
         }
 
+        private void replaceNormalVectorsRadioButton_CheckedChanged(object sender, EventArgs e)
+        {
+            AddNormalVectors = 0;
+            TGrid.DrawTriangleGrid(bmp);
+            canvas.Refresh();
+        }
+
+        private void addNormalVectorsRadioButton_CheckedChanged(object sender, EventArgs e)
+        {
+            AddNormalVectors = 1;
+            TGrid.DrawTriangleGrid(bmp);
+            canvas.Refresh();
+        }
+
+        private void collapsibleGroupBox1_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void triangleDensityGroupBox_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label6_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void lightZSlider_Scroll(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label11_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void groupBox4_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+
+
+        private void triangleGridCheckbox_CheckStateChanged(object sender, EventArgs e)
+        {
+            if (triangleGridCheckbox.CheckState == CheckState.Unchecked)
+            {
+                TGrid.showMesh = TGrid.showTriangleGrid = false;
+            }
+            else if (triangleGridCheckbox.CheckState == CheckState.Checked)
+            {
+                TGrid.showMesh = false;
+                TGrid.showTriangleGrid = true;
+            }
+            else if (triangleGridCheckbox.CheckState == CheckState.Indeterminate)
+            {
+                TGrid.showMesh = TGrid.showTriangleGrid = true;
+            }
+
+            TGrid.DrawTriangleGrid(bmp);
+            canvas.Refresh();
+        }
+
+        private void resetSurfaceButton_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i <= ctrlPtsNo; i++)
+            {
+                for (int j = 0; j <= ctrlPtsNo; j++)
+                {
+                    controlPoints[i, j].Z = 0;
+                }
+            }
+
+            selectedPoint = null;
+
+            ctrlPointXLabel.Text = "";
+            ctrlPointYLabel.Text = "";
+            ctrlPointZLabel.Text = "";
+
+            pointHeightSlider.Value = (pointHeightSlider.Maximum + pointHeightSlider.Minimum) / 2;
+            pointHeightSlider.Enabled = false;
+
+            TGrid.CalculateVertexGrid();
+            TGrid.DrawTriangleGrid(bmp);
+            canvas.Refresh();
+            //PointHeightBox.Refresh();
+        }
+
+        private void canvas_MouseLeave(object sender, EventArgs e)
+        {
+            MousePos = new Point(-100, -100);
+            canvas.Refresh();
+        }
+
+        private void resetLightPosButton_Click(object sender, EventArgs e)
+        {
+            InitializeLight();
+            animationCheckBox.Checked = false;
+        }
+
+        private void panel19_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void objColorRadioButton_CheckedChanged(object sender, EventArgs e)
+        {
+            objColorRadioButton_CheckedChanged();
+        }
+
+        private void objColorRadioButton_CheckedChanged()
+        {
+            if (objColorRadioButton.Checked)
+            {
+                objectColorButton.Enabled = true;
+
+                textureRadioButton.Checked = false;
+                textureComboBox.Enabled = false;
+                textureFileButton.Enabled = false;
+                texturePictureBox.Image = null;
+
+                TriangleGrid.textureFlag = 0;
+                TGrid.DrawTriangleGrid(bmp);
+                canvas.Refresh();
+            }
+        }
+
+        private void textureRadioButton_CheckedChanged(object sender, EventArgs e)
+        {
+            if (textureRadioButton.Checked)
+            {
+                objectColorButton.Enabled = false;
+                objColorRadioButton.Checked = false;
+                objectColorButton.BackColor = Color.White;
+
+                textureComboBox.Enabled = true;
+                textureFileButton.Enabled = true;
+                texturePictureBox.Image = stashedTexture ?? null;
+
+                TriangleGrid.textureFlag = 1;
+                TGrid.DrawTriangleGrid(bmp);
+                canvas.Refresh();
+            }
+        }
+
+        private void normalMapCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            normalMapCheckBox_CheckedChanged();
+        }
+
+        private void normalMapCheckBox_CheckedChanged()
+        {
+            foreach (Control control in normalMapGroupBox.Controls)
+            {
+                if (control != panelWithNormalMapCheckBox)
+                    control.Enabled = normalMapCheckBox.Checked;
+            }
+            normalMapComboBox.Enabled = normalMapCheckBox.Checked;
+            normalMapFileButton.Enabled = normalMapCheckBox.Checked;
+            normalMapPictureBox.Enabled = normalMapCheckBox.Checked;
+            normalMapCheckBox.Enabled = true;
+
+            TriangleGrid.normalMapFlag = normalMapCheckBox.Checked ? 1 : 0;
+
+            if (normalMapCheckBox.Checked)
+                normalMapPictureBox.Image = stashedNormalMap ?? null;
+            else
+                normalMapPictureBox.Image = null;
+        }
+
+        private void kotowskiRadioButton_Click(object sender, EventArgs e)
+        {
+            TriangleGrid.zuchowski = false;
+        }
+
+        private void zuchowskiRadioButton_Click(object sender, EventArgs e)
+        {
+            TriangleGrid.zuchowski = true;
+        }
     }
 }

@@ -12,6 +12,7 @@ namespace lab2
         // maybe make it just Point3d
         public float x, y, z;
         public Point3D N;
+        public Point3D P;
 
         public int XPixel(int size) => (int)(x * size);
         public int YPixel(int size) => (int)(y * size);
@@ -23,6 +24,7 @@ namespace lab2
             this.z = z;
 
             N = BezierSurface.NormalVector(x, y, Trianglr.controlPoints);
+            P = new Point3D(0, 1, BezierSurface.TangentVector_dV_Z(x, y, Trianglr.controlPoints));
         }
     }
 }

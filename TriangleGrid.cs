@@ -33,8 +33,15 @@ namespace lab2
 
         public bool showNormalVectors;
         public bool showTriangleGrid;
+        public bool showMesh;
 
-        public TriangleGrid(int size, bool showTriangleGrid, bool showNormalVectors)
+        public Light light;
+        public SurfaceMaterial material;
+
+        public static bool zuchowski;
+
+        public TriangleGrid(int size, bool showTriangleGrid, bool showNormalVectors, 
+            Light light, SurfaceMaterial material)
         {
             this.size = size;
             CalculateHorizontal(HorizontalDensity);
@@ -43,13 +50,22 @@ namespace lab2
 
             this.showTriangleGrid = showTriangleGrid;
             this.showNormalVectors = showNormalVectors;
+            this.light = light;
+            this.material = material;
         }
 
         public void DrawTriangleGrid(DirectBitmap bmp)
         {
-            //bmp.Clear();
-            DrawTriangleGridFilled(bmp);
-            if (showTriangleGrid)
+            if (showMesh)
+            {
+                bmp.Clear();
+                bmp.SetToBlack();
+
+                
+            }
+            else
+                DrawTriangleGridFilled(bmp);
+            if (showTriangleGrid || showMesh)
                 DrawTriangleGridOutline(bmp);
             if (showNormalVectors)
                 DrawNormalVectors(bmp);
@@ -99,7 +115,7 @@ namespace lab2
             {
                 verticalTrianglePoints[i] = i * verticalTriangleStep;
             }
-            
+
         }
 
         public void UpdateVertically(int density)
@@ -130,24 +146,40 @@ namespace lab2
             int vStep = (int)(verticalTriangleStep * CanvasSize);
             int hStep = (int)(horizontalTriangleStep * CanvasSize);
 
-            for (int i = 0; i <= VerticalDensity; i++)
+            for (int i = 0; i < VerticalDensity; i++)
             {
                 int vPoint = (int)(verticalTrianglePoints[i] * CanvasSize);
-                bmp.DrawFastLine(0, vPoint,
-                    size, vPoint);
 
-                for (int j = 0; j <= HorizontalDensity; j++)
+                for (int j = 0; j < HorizontalDensity; j++)
                 {
                     int hPoint = (int)(horizontalTrianglePoints[j] * CanvasSize);
-                    bmp.DrawFastLine(hPoint, 0, hPoint, size);
+                    Vertex[] P = GetTriangle(i, j, 1, 0);
+                    Func<int, int, Color> getColor = showMesh ? 
+                        (x, y) => GetColor(P, x, y) :
+                        (x, y) => Color.Black;
+
+                    bmp.DrawFastLine(hPoint, vPoint, 
+                        hPoint, vPoint + vStep, getColor);
 
                     bmp.DrawFastLine(hPoint, vPoint,
-                        hPoint + hStep, vPoint + vStep);
+                        hPoint + hStep, vPoint + vStep, getColor);
 
+                    bmp.DrawFastLine(hPoint, vPoint + vStep,
+                        hPoint + hStep, vPoint + vStep, getColor);
                 }
             }
 
         }
+
+        private static (float x, float y, float z) CalculateB((float X, float Y, float Z) N)
+        {
+            if (Math.Abs(N.X) < 1e-3 && Math.Abs(N.Y) < 1e-3 && Math.Abs(N.Z - 1) < 1e-3)
+                return (0, 1, 0);
+            else
+                return Normalize((N.Y, -N.X, 0));
+        }
+
+        private static (float x, float y, float z) CalculateB(Point3D N) => CalculateB((N.X, N.Y, N.Z));
 
         private void DrawNormalVectors(DirectBitmap bmp)
         {
@@ -159,31 +191,18 @@ namespace lab2
                 {
                     var N = GetModNormalVector((grid[i, j].N.X, grid[i, j].N.Y, grid[i, j].N.Z),
                         (int)(grid[i, j].x * CanvasSize),
-                        (int)(grid[i, j].y * CanvasSize));
-                    float x = N.x;
-                    float y = N.y;
+                        (int)(grid[i, j].y * CanvasSize), 
+                        (grid[i, j].P.X, grid[i, j].P.Y, grid[i, j].P.Z));
 
-                    float magn = (float)Math.Sqrt(x * x + y * y);
-
-                    float nx, ny;
-                    if (magn == 0)
-                    {
-                        nx = ny = 0;
-                    }
-                    else
-                    {
-                        nx = x / (magn * 20);
-                        ny = y / (magn * 20);
-                    }
-
-                    if (grid[i, j].x + nx < 0 || grid[i, j].y + ny < 0)
-                        continue;
+                    (float nx, float ny, _) = Normalize(N);
+                    nx /= 10;
+                    ny /= 10;
 
                     bmp.DrawFastLine(
-                        (int)(grid[i, j].x * CanvasSize),
-                        (int)(grid[i, j].y * CanvasSize),
-                        (int)((grid[i, j].x + nx) * CanvasSize),
-                        (int)((grid[i, j].y + ny) * CanvasSize),
+                        Math.Clamp((int)(grid[i, j].x * CanvasSize), 0, CanvasSize),
+                        Math.Clamp((int)(grid[i, j].y * CanvasSize), 0, CanvasSize),
+                        Math.Clamp((int)((grid[i, j].x + nx) * CanvasSize), 0, CanvasSize),
+                        Math.Clamp((int)((grid[i, j].y + ny) * CanvasSize), 0, CanvasSize),
                         Color.Yellow);
                 }
                 //);
@@ -277,7 +296,25 @@ namespace lab2
                 lambda1 * P[0].N.Z + lambda2 * P[1].N.Z + lambda3 * P[2].N.Z
             ));
 
-            normalVector = GetModNormalVector(normalVector, x, y);
+            (float x, float y, float z) tangentVector = Normalize((
+                lambda1 * P[0].P.X + lambda2 * P[1].P.X + lambda3 * P[2].P.X,
+                lambda1 * P[0].P.Y + lambda2 * P[1].P.Y + lambda3 * P[2].P.Y,
+                lambda1 * P[0].P.Z + lambda2 * P[1].P.Z + lambda3 * P[2].P.Z
+                ));
+
+
+            if (normalMapFlag != 0)
+            {
+                var modNormalVector = GetModNormalVector(normalVector, x, y, tangentVector);
+                normalVector = (
+                    normalVector.x * AddNormalVectors + modNormalVector.x,
+                    normalVector.y * AddNormalVectors + modNormalVector.y,
+                    normalVector.z * AddNormalVectors + modNormalVector.z
+                );
+                normalVector = Normalize(normalVector);
+
+            }
+
 
             float cosNL = normalVector.x * lightVector.x +
                 normalVector.y * lightVector.y +
@@ -327,7 +364,7 @@ namespace lab2
         private static (float x, float y, float z) Normalize((float x, float y, float z) v)
         {
             float magnitude = (float)Math.Sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-            if (magnitude > 0)
+            if (magnitude != 0)
             {
                 return (
                     v.x / magnitude,
@@ -338,37 +375,37 @@ namespace lab2
                 return (0, 0, 0);
         }
 
-        private static (float x, float y, float z) GetModNormalVector((float x, float y, float z) v, int x, int y)
+        private static (float x, float y, float z) GetModNormalVector((float x, float y, float z) v, int x, int y, (float x, float y, float z) tangentVector)
         {
             if (normalMapFlag == 0)
                 return v;
 
-            int normalMapVector = normalMapFlag * NormalMap.GetPixel(x, y).ToArgb();
+            int normalMapVector = NormalMap.GetPixel(x, y).ToArgb();
             float normalMapR = ((normalMapVector >> 16) & 0xFF) / 127.5f - 1;
-            float normalMapG = ((normalMapVector >> 8) & 0xFF) / 127.5f - 1;
+            float normalMapG = (((normalMapVector >> 8) & 0xFF) / 127.5f - 1);
             float normalMapB = (normalMapVector & 0xFF) / 127.5f - 1;
 
             float Nx = v.x;
             float Ny = v.y;
             float Nz = v.z;
 
-            (float x, float y, float z) B;
 
-            if (Math.Abs(Nx) < 1e-6 && Math.Abs(Ny) < 1e-6 && Math.Abs(Nz - 1) < 1e-6)
-                B = (0, 1, 0);
+            (float x, float y, float z) B;
+            
+            if (zuchowski)
+                B = tangentVector;
             else
-                B = (Ny, -Nx, 0);
+                B = CalculateB(v);
 
             (float x, float y, float z) T =
-                (B.y * Nz - B.z * Ny,
-                B.z * Nx - B.x * Nz,
-                B.x * Ny - B.y * Nx);
+                Normalize(
+                    (B.y * Nz - B.z * Ny,
+                    B.z * Nx - B.x * Nz,
+                    B.x * Ny - B.y * Nx));
 
-            (float x, float y, float z)[] M = { T, B, v };
-
-            float resultX = M[0].x * normalMapR + M[1].x * normalMapG + M[2].x * normalMapB;
-            float resultY = M[0].y * normalMapR + M[1].y * normalMapG + M[2].y * normalMapB;
-            float resultZ = M[0].z * normalMapR + M[1].z * normalMapG + M[2].z * normalMapB;
+            float resultX = T.x * normalMapR + B.x * normalMapG + Nx * normalMapB;
+            float resultY = T.y * normalMapR + B.y * normalMapG + Ny * normalMapB;
+            float resultZ = T.z * normalMapR + B.z * normalMapG + Nz * normalMapB;
 
             return (resultX, resultY, resultZ);
         }

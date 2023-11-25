@@ -1,5 +1,5 @@
 task:
-- draw only grid
+x draw only grid
 - fillpolygon filling any polygon
 x jak podniesiesz jeden punkt to trojkat na przeciwko robi dziwnie
 x normalmaps
@@ -11,15 +11,15 @@ refactor:
 - methods for changing slider values easily because jfc
 
 optimalization:
-- improve bresenham 
+x improve bresenham 
 - use more or less threads 
 
 prettization:
-- ui
-- grid points check for contrast
+x ui
+o grid points check for contrast
 - normal vectors as arrows
-- make fukin animation smooth
+o make fukin animation smooth
 
 ux:
-- drag points
+o drag points
 - only images to select files
