@@ -17,9 +17,9 @@ x improve bresenham
 prettization:
 x ui
 o grid points check for contrast
-- normal vectors as arrows
-o make fukin animation smooth
+x normal vectors as arrows
+x make fukin animation smooth
 
 ux:
 o drag points
-- only images to select files
+x only images to select files

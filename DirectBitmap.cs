@@ -33,6 +33,9 @@ namespace lab2
 
         public DirectBitmap(Image image, int width, int height) : this(width, height)
         {
+            if (image == null)
+                return;
+
             using (var g = Graphics.FromImage(Bitmap))
                 g.DrawImage(image, 0, 0, Width, Height);
         }
@@ -46,9 +49,6 @@ namespace lab2
 
         public void SetToBlack()
         {
-            //for (int i = 0; i < Width * Height; ++i)
-            //    Bits[i] = Color.FromArgb(1, 0, 0, 0).ToArgb();
-
             for (int i = 0; i < Height; ++i)
                 for (int j = 0; j < Width; ++j)
                     SetPixel(i, j, Color.Black);
@@ -111,7 +111,7 @@ namespace lab2
             else
                 Bresenham(y1, x1, dy, dx, sgndy, sgndx, (y, x) => SetPixel(x, y, getColor(x, y)));
         }
-        
+
         private void Bresenham(int x1, int y1, int dx, int dy, int sgndx, int sgndy, Action<int, int> setter)
         {
             int dStr = 2 * dy;
@@ -135,7 +135,7 @@ namespace lab2
                     x += sgndx;
                     y += sgndy;
                 }
-                
+
                 if (x < Width && y < Height && x > 0 && y > 0)
                     setter(x, y);
 
@@ -156,7 +156,7 @@ namespace lab2
             }
         }
 
-        public void FillPolygon(Vertex[] V)
+        public void FillPolygon(Vertex[] V, int size, Func<Vertex[], int, int, Color> getColor)
         {
             if (V.Length < 3)
             {
@@ -164,7 +164,6 @@ namespace lab2
             }
 
             var AET = new List<AETNode>();
-            int size = Trianglr.CanvasSize;
 
             (int x, int y)[] P = new (int x, int y)[3]
             {
@@ -224,7 +223,7 @@ namespace lab2
                 {
                     for (int x = (int)AET[i].x; x <= AET[i + 1].x; x++)
                     {
-                        SetPixel(x, y, TriangleGrid.GetColor(V, x, y));
+                        SetPixel(x, y, getColor(V, x, y));
                     }
                 }
 

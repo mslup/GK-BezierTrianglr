@@ -12,7 +12,7 @@ namespace lab2
         public Point3D Position;
 
         public Light(
-            Point3D color, Point3D position)
+            Point3D position, Point3D color)
         {
             Color = color;
             Position = position;

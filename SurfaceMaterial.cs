@@ -8,18 +8,18 @@ namespace lab2
 {
     public class SurfaceMaterial
     {
-        public DirectBitmap NormalMap;
-        public DirectBitmap Texture;
+        public DirectBitmap? NormalMap;
+        public DirectBitmap? Texture;
         public Point3D Color;
         public float kD;
         public float kS;
-        public float m;
+        public int m;
 
         public SurfaceMaterial(
-            float kD, float kS, float m, 
-            DirectBitmap normalMap, 
-            DirectBitmap texture, 
-            Point3D objectColor)
+            float kD, float kS, int m, 
+            Point3D objectColor,
+            DirectBitmap? normalMap, 
+            DirectBitmap? texture)
         {
             NormalMap = normalMap;
             Texture = texture;

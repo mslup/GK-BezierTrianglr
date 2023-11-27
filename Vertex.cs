@@ -17,14 +17,14 @@ namespace lab2
         public int XPixel(int size) => (int)(x * size);
         public int YPixel(int size) => (int)(y * size);
 
-        public Vertex(float x, float y, float z)
+        public Vertex(float x, float y, float z, Point3D[,] controlPoints)
         {
             this.x = x;
             this.y = y;
             this.z = z;
 
-            N = BezierSurface.NormalVector(x, y, Trianglr.controlPoints);
-            P = new Point3D(0, 1, BezierSurface.TangentVector_dV_Z(x, y, Trianglr.controlPoints));
+            N = BezierSurface.NormalVector(x, y, controlPoints);
+            P = new Point3D(0, 1, BezierSurface.TangentVector_dV_Z(x, y, controlPoints));
         }
     }
 }

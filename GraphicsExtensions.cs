@@ -19,19 +19,22 @@ namespace lab2
         private static Brush pointBrush = new SolidBrush(Color.Black);
         private static Brush slcpointBrush = new SolidBrush(Color.IndianRed);
         private static Brush hlPointBrush = new SolidBrush(Color.FromArgb(127, 0, 0, 0));
-        public static void DrawPoint(this Graphics g, Point3D p, bool highlight, bool selected)
+        public static void DrawPoint(this Graphics g, Point3D p, int size, bool highlight, bool selected)
         {
+            int XPixel = (int)(p.X * size);
+            int YPixel = (int)(p.Y * size);   
+
             if (highlight)
                 g.FillEllipse(hlPointBrush,
-                    p.XPixel - hlPointWidth / 2,
-                    p.YPixel - hlPointWidth / 2,
+                    XPixel - hlPointWidth / 2,
+                    YPixel - hlPointWidth / 2,
                     hlPointWidth, hlPointWidth);
 
             var brush = selected ? slcpointBrush : pointBrush;
             int width = selected ? pointWidth + 4 : pointWidth;
             g.FillEllipse(brush,
-                p.XPixel - width / 2,
-                p.YPixel - width / 2,
+                XPixel - width / 2,
+                YPixel - width / 2,
                 width, width);
         }
 

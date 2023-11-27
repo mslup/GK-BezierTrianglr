@@ -63,9 +63,29 @@ namespace lab2.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Bricks2NM {
+            get {
+                object obj = ResourceManager.GetObject("Bricks2NM", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap BricksNM {
             get {
                 object obj = ResourceManager.GetObject("BricksNM", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap BricksT {
+            get {
+                object obj = ResourceManager.GetObject("BricksT", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

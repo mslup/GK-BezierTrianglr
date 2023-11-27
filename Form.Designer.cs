@@ -171,7 +171,7 @@
             splitContainer.Panel2.Controls.Add(groupBox2);
             splitContainer.Panel2.Controls.Add(PointHeightBox);
             splitContainer.Panel2.Controls.Add(groupBox1);
-            splitContainer.Size = new Size(1363, 589);
+            splitContainer.Size = new Size(1363, 563);
             splitContainer.SplitterDistance = 500;
             splitContainer.TabIndex = 0;
             // 
@@ -181,7 +181,7 @@
             canvas.Dock = DockStyle.Fill;
             canvas.Location = new Point(0, 0);
             canvas.Name = "canvas";
-            canvas.Size = new Size(500, 589);
+            canvas.Size = new Size(500, 563);
             canvas.TabIndex = 0;
             canvas.TabStop = false;
             canvas.Paint += canvas_Paint;
@@ -271,7 +271,6 @@
             lightZSlider.Size = new Size(219, 39);
             lightZSlider.TabIndex = 3;
             lightZSlider.TickFrequency = 10;
-            lightZSlider.Scroll += lightZSlider_Scroll;
             lightZSlider.ValueChanged += lightZSlider_ValueChanged;
             // 
             // panel2
@@ -328,7 +327,6 @@
             lightXLabel.TabIndex = 2;
             lightXLabel.Text = "label6";
             lightXLabel.TextAlign = ContentAlignment.MiddleLeft;
-            lightXLabel.Click += label6_Click;
             // 
             // lightXSlider
             // 
@@ -353,7 +351,6 @@
             groupBox4.TabIndex = 6;
             groupBox4.TabStop = false;
             groupBox4.Text = "Object color";
-            groupBox4.Enter += groupBox4_Enter;
             // 
             // panel9
             // 
@@ -386,6 +383,7 @@
             textureComboBox.Name = "textureComboBox";
             textureComboBox.Size = new Size(132, 23);
             textureComboBox.TabIndex = 2;
+            textureComboBox.SelectedIndexChanged += textureComboBox_SelectedIndexChanged;
             // 
             // textureRadioButton
             // 
@@ -409,7 +407,6 @@
             panel19.Padding = new Padding(4);
             panel19.Size = new Size(109, 98);
             panel19.TabIndex = 12;
-            panel19.Paint += panel19_Paint;
             // 
             // texturePictureBox
             // 
@@ -484,7 +481,6 @@
             triangleDensityGroupBox.TabIndex = 0;
             triangleDensityGroupBox.TabStop = false;
             triangleDensityGroupBox.Text = "Triangle grid";
-            triangleDensityGroupBox.Enter += triangleDensityGroupBox_Enter;
             // 
             // normalVectorsCheckbox
             // 
@@ -731,7 +727,6 @@
             // 
             normalMapComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             normalMapComboBox.FormattingEnabled = true;
-            normalMapComboBox.Items.AddRange(new object[] { "BrickWall" });
             normalMapComboBox.Location = new Point(28, 35);
             normalMapComboBox.Name = "normalMapComboBox";
             normalMapComboBox.Size = new Size(132, 23);
@@ -1007,7 +1002,6 @@
             label11.TabIndex = 2;
             label11.Text = "Diffuse";
             label11.TextAlign = ContentAlignment.MiddleLeft;
-            label11.Click += label11_Click;
             // 
             // colorDialog
             // 
@@ -1025,7 +1019,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1363, 589);
+            ClientSize = new Size(1363, 563);
             Controls.Add(splitContainer);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;

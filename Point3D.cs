@@ -11,15 +11,6 @@ namespace lab2
         public float X, Y, Z;
 
 
-        public int XPixel
-        {
-            get => (int)(Trianglr.CanvasSize * X);
-        }
-        public int YPixel
-        {
-            get => (int)(Trianglr.CanvasSize * Y);
-        }
-
         public Point3D(float x, float y, float z)
         {
             X = x;
@@ -27,8 +18,11 @@ namespace lab2
             Z = z;
         }
 
-        public bool IsXYCloseToPoint(Point other)
+        public bool IsXYCloseToPoint(Point other, int size)
         {
+            int XPixel = (int)(size * X);
+            int YPixel = (int)(size * Y);
+
             int eps = Trianglr.Eps + Trianglr.PointRadius;
             return Math.Abs(XPixel - other.X) < eps &&
                 Math.Abs(YPixel - other.Y) < eps;

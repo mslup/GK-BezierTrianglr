@@ -1,38 +1,33 @@
+using System.Collections;
 using System.Drawing;
 using System.Globalization;
 using System.Security.Policy;
+using System.Windows.Forms;
 using lab2.Properties;
 
 namespace lab2
 {
     public partial class Trianglr : Form
     {
-        private const int ctrlPtsNo = 3;
-        public static int Eps = 10;
-        public static int PointRadius = 5;
+        public const int Eps = 10;
+        public const int PointRadius = 5;
 
-        public static int CanvasSize;
-        public static Point3D[,] controlPoints = new Point3D[ctrlPtsNo + 1, ctrlPtsNo + 1];
+        private const int ctrlPtsNo = 3;
+        private const string ComboBoxMessage = "Choose predefined...";
+
+        private Point3D[,] controlPoints = new Point3D[ctrlPtsNo + 1, ctrlPtsNo + 1];
+
+        private int CanvasSize;
         private Point3D? selectedPoint = null;
         private Point MousePos;
 
-        private TriangleGrid TGrid;
-        private DirectBitmap bmp;
-        public static DirectBitmap Texture;
-        public static DirectBitmap NormalMap;
+        private Renderer scene;
 
         private Image stashedTexture;
         private Image stashedNormalMap;
 
-        public Light light { get; set; }
-        public SurfaceMaterial material;
-
-        public bool MovingVertex = false;
+        private bool MovingVertex = false;
         private bool IsAnimating = false;
-
-        public static bool MeshOnly = false;
-
-        public static int AddNormalVectors = 0;
 
         public Trianglr()
         {
@@ -50,16 +45,30 @@ namespace lab2
                 }
             }
 
-            TGrid = new TriangleGrid(CanvasSize, triangleGridCheckbox.Checked,
-                normalVectorsCheckbox.Checked, light, material);
+            scene = new Renderer(
+                CanvasSize,
+                8, 8,
+                controlPoints,
+                new Light(
+                    new Point3D(0.5f, 0.5f, 0.5f),
+                    new Point3D(1, 1, 1)
+                    ),
+                new SurfaceMaterial(
+                    1, 0.5f, 50,
+                    new Point3D(0.8f, 0.8f, 0.8f),
+                    null, null),
+                triangleGridCheckbox.Checked,
+                normalVectorsCheckbox.Checked);
 
             InitializeParameters();
 
-            TGrid.DrawTriangleGrid(bmp);
+            scene.DrawTriangleGrid();
 
-            textureComboBox.Text = "Choose predefined...";
+            textureComboBox.Text = ComboBoxMessage;
+            normalMapComboBox.Text = ComboBoxMessage;
 
-            //SetNormalMap(Resources.ShapesNM);
+            InitializeComboBoxes();
+
         }
 
         private void InitializeParameters()
@@ -67,42 +76,57 @@ namespace lab2
             pointHeightSlider.Value = (pointHeightSlider.Maximum + pointHeightSlider.Minimum) / 2;
             pointHeightSlider.Enabled = false;
 
-            horizontalDensitySlider.Value = TGrid.HorizontalDensity;
-            verticalDensitySlider.Value = TGrid.VerticalDensity;
-
-            bmp = new(CanvasSize + 1, CanvasSize + 1);
-            Texture = new(CanvasSize + 1, CanvasSize + 1);
+            horizontalDensitySlider.Value = scene.HorizontalDensity;
+            verticalDensitySlider.Value = scene.VerticalDensity;
 
             InitializeLight();
 
-            lightColorButton.BackColor = TriangleGrid.lightSourceColor.ToColor();
+            lightColorButton.BackColor = scene.light.Color.ToColor();
 
-            InitializeSlider(kDSlider, TriangleGrid.kD);
-            InitializeSlider(kSSlider, TriangleGrid.kS);
-            InitializeSlider(mSlider, TriangleGrid.m);
+            InitializeSlider(kDSlider, scene.material.kD);
+            InitializeSlider(kSSlider, scene.material.kS);
+            InitializeSlider(mSlider, scene.material.m);
 
             objColorRadioButton.Checked = true;
             objColorRadioButton_CheckedChanged();
-            objectColorButton.BackColor = TriangleGrid.objectColor.ToColor();
+            objectColorButton.BackColor = scene.material.Color.ToColor();
 
             animationTimer.Interval = 24;
 
             normalMapCheckBox.Checked = false;
             normalMapCheckBox_CheckedChanged();
 
-            TriangleGrid.invertYnormalMap = 1;
+            scene.invertYnormalMap = true;
 
-            TriangleGrid.zuchowski = true;
+            scene.zuchowski = true;
             zuchowskiRadioButton.Checked = true;
+
+        }
+
+        private void InitializeComboBoxes()
+        {
+            foreach (DictionaryEntry resource in Resources.ResourceManager.GetResourceSet(CultureInfo.CurrentCulture, true, true))
+            {
+                string name = resource.Key.ToString();
+
+                if (name.EndsWith("NM"))
+                {
+                    normalMapComboBox.Items.Add(name[..^2]);
+                }
+                else if (name.EndsWith("T"))
+                {
+                    textureComboBox.Items.Add(name[..^1]);
+                }
+            }
         }
 
         private void InitializeLight()
         {
-            TriangleGrid.lightSourcePos = new Point3D(0.5f, 0.5f, 1);
+            scene.light.Position = new Point3D(0.5f, 0.5f, 1);
 
-            InitializeSlider(lightXSlider, TriangleGrid.lightSourcePos.X);
-            InitializeSlider(lightYSlider, TriangleGrid.lightSourcePos.Y);
-            InitializeSlider(lightZSlider, TriangleGrid.lightSourcePos.Z);
+            InitializeSlider(lightXSlider, scene.light.Position.X);
+            InitializeSlider(lightYSlider, scene.light.Position.Y);
+            InitializeSlider(lightZSlider, scene.light.Position.Z);
         }
 
         private void InitializeSlider(TrackBar slider, float value)
@@ -123,7 +147,7 @@ namespace lab2
             int size = canvas.Height;
             var pen = new Pen(new SolidBrush(Color.Black));
 
-            g.DrawImage(bmp.Bitmap, 0, 0);
+            g.DrawImage(scene.Bmp.Bitmap, 0, 0);
 
             float squareStep = 1.0f * size / ctrlPtsNo;
 
@@ -139,23 +163,19 @@ namespace lab2
             {
                 for (int j = 0; j <= ctrlPtsNo; j++)
                 {
-                    g.DrawPoint(controlPoints[i, j],
-                        controlPoints[i, j].IsXYCloseToPoint(MousePos) ||
+                    g.DrawPoint(controlPoints[i, j], CanvasSize,
+                        controlPoints[i, j].IsXYCloseToPoint(MousePos, CanvasSize) ||
                         (MovingVertex && controlPoints[i, j] == selectedPoint),
                         controlPoints[i, j] == selectedPoint);
                 }
             }
 
-            g.DrawPoint(TriangleGrid.lightSourcePos,
-                TriangleGrid.lightSourcePos.IsXYCloseToPoint(MousePos) ||
-                        (MovingVertex && TriangleGrid.lightSourcePos == selectedPoint),
-                TriangleGrid.lightSourcePos == selectedPoint);
+            g.DrawPoint(scene.light.Position, CanvasSize,
+                scene.light.Position.IsXYCloseToPoint(MousePos, CanvasSize) ||
+                        (MovingVertex && scene.light.Position == selectedPoint),
+                scene.light.Position == selectedPoint);
 
         }
-
-        public static Point? debugPoint = null;
-
-
 
         private void pointHeightScrollBar_ValueChanged(object sender, EventArgs e)
         {
@@ -165,19 +185,18 @@ namespace lab2
             selectedPoint.Z = pointHeightSlider.Value / 100.0f;
             ctrlPointZLabel.Text = String.Format("{0:F}", selectedPoint.Z);
 
-            TGrid.CalculateVertexGrid();
-            TGrid.DrawTriangleGrid(bmp);
+            scene.CalculateVertexGrid();
+            scene.DrawTriangleGrid();
 
             canvas.Refresh();
         }
-
 
         private void horizontalDensityScrollBar_ValueChanged(object sender, EventArgs e)
         {
             horizontalDensityLabel.Text = $"{horizontalDensitySlider.Value}";
 
-            TGrid.UpdateHorizontally(horizontalDensitySlider.Value);
-            TGrid.DrawTriangleGrid(bmp);
+            scene.UpdateHorizontally(horizontalDensitySlider.Value);
+            scene.DrawTriangleGrid();
 
             canvas.Refresh();
         }
@@ -186,8 +205,8 @@ namespace lab2
         {
             verticalDensityLabel.Text = $"{verticalDensitySlider.Value}";
 
-            TGrid.UpdateVertically(verticalDensitySlider.Value);
-            TGrid.DrawTriangleGrid(bmp);
+            scene.UpdateVertically(verticalDensitySlider.Value);
+            scene.DrawTriangleGrid();
 
             canvas.Refresh();
         }
@@ -216,53 +235,53 @@ namespace lab2
         private void lightXSlider_ValueChanged(object sender, EventArgs e)
         {
             if (!IsAnimating && !MovingVertex)
-                TriangleGrid.lightSourcePos.X = lightXSlider.Value / 100.0f;
+                scene.light.Position.X = lightXSlider.Value / 100.0f;
 
-            lightXLabel.Text = string.Format("X: {0:F}", TriangleGrid.lightSourcePos.X);
+            lightXLabel.Text = string.Format("X: {0:F}", scene.light.Position.X);
 
-            TGrid.DrawTriangleGrid(bmp);
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
         private void lightYSlider_ValueChanged(object sender, EventArgs e)
         {
             if (!IsAnimating && !MovingVertex)
-                TriangleGrid.lightSourcePos.Y = lightYSlider.Value / 100.0f;
+                scene.light.Position.Y = lightYSlider.Value / 100.0f;
 
-            lightYLabel.Text = string.Format("Y: {0:F}", TriangleGrid.lightSourcePos.Y);
+            lightYLabel.Text = string.Format("Y: {0:F}", scene.light.Position.Y);
 
-            TGrid.DrawTriangleGrid(bmp);
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
         private void lightZSlider_ValueChanged(object sender, EventArgs e)
         {
-            TriangleGrid.lightSourcePos.Z = lightZSlider.Value / 100.0f;
+            scene.light.Position.Z = lightZSlider.Value / 100.0f;
 
-            lightZLabel.Text = string.Format("Z: {0:F}", TriangleGrid.lightSourcePos.Z);
+            lightZLabel.Text = string.Format("Z: {0:F}", scene.light.Position.Z);
 
-            TGrid.DrawTriangleGrid(bmp);
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
         private void kDSlider_ValueChanged(object sender, EventArgs e)
         {
-            TriangleGrid.kD = kDSlider.Value / 100.0f;
-            TGrid.DrawTriangleGrid(bmp);
+            scene.material.kD = kDSlider.Value / 100.0f;
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
         private void kSSlider_ValueChanged(object sender, EventArgs e)
         {
-            TriangleGrid.kS = kSSlider.Value / 100.0f;
-            TGrid.DrawTriangleGrid(bmp);
+            scene.material.kS = kSSlider.Value / 100.0f;
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
         private void mSlider_ValueChanged(object sender, EventArgs e)
         {
-            TriangleGrid.m = mSlider.Value;
-            TGrid.DrawTriangleGrid(bmp);
+            scene.material.m = mSlider.Value;
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
@@ -270,20 +289,20 @@ namespace lab2
         {
             if (colorDialog.ShowDialog() == DialogResult.OK)
             {
-                TriangleGrid.lightSourceColor = new Point3D(
+                scene.light.Color = new Point3D(
                     colorDialog.Color.R / 255.0f,
                     colorDialog.Color.G / 255.0f,
                     colorDialog.Color.B / 255.0f);
                 lightColorButton.BackColor = colorDialog.Color;
             }
-            TGrid.DrawTriangleGrid(bmp);
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
         private void normalVectorsCheckbox_CheckedChanged(object sender, EventArgs e)
         {
-            TGrid.showNormalVectors = normalVectorsCheckbox.Checked;
-            TGrid.DrawTriangleGrid(bmp);
+            scene.showNormalVectors = normalVectorsCheckbox.Checked;
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
@@ -296,14 +315,14 @@ namespace lab2
         {
             if (colorDialog.ShowDialog() == DialogResult.OK)
             {
-                TriangleGrid.objectColor = new Point3D(
+                scene.material.Color = new Point3D(
                     colorDialog.Color.R / 255.0f,
                     colorDialog.Color.G / 255.0f,
                     colorDialog.Color.B / 255.0f);
                 objectColorButton.BackColor = colorDialog.Color;
                 objectColorButton.Refresh();
             }
-            TGrid.DrawTriangleGrid(bmp);
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
@@ -315,8 +334,8 @@ namespace lab2
             float newX = 0.5f + 0.3f * (float)Math.Sin(angle / k) * (float)Math.Cos(angle);
             float newY = 0.5f + 0.3f * (float)Math.Sin(angle / k) * (float)Math.Sin(angle);
 
-            TriangleGrid.lightSourcePos.X = newX;
-            TriangleGrid.lightSourcePos.Y = newY;
+            scene.light.Position.X = newX;
+            scene.light.Position.Y = newY;
 
             lightXLabel.Text = string.Format("X: {0:F}", newX);
             lightYLabel.Text = string.Format("Y: {0:F}", newY);
@@ -325,26 +344,27 @@ namespace lab2
             lightYSlider.Value = (int)(newY * 100f);
 
             angle += 0.05f;//0.9f * timeStep;
-            //TGrid.DrawTriangleGrid(bmp);
+            //TGrid.DrawTriangleGrid();
             canvas.Invalidate();
 
         }
 
         private void textureButton_Click(object sender, EventArgs e)
         {
+            chooseFileDialog.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.tif";
+            chooseFileDialog.FilterIndex = 1;
+
             if (chooseFileDialog.ShowDialog() == DialogResult.OK)
             {
-                Texture = new DirectBitmap(Image.FromFile(chooseFileDialog.FileName), CanvasSize + 1, CanvasSize + 1);
-                TriangleGrid.textureFlag = 1;
-                stashedTexture = Image.FromFile(chooseFileDialog.FileName);
-                texturePictureBox.Image = stashedTexture;
-                TGrid.DrawTriangleGrid(bmp);
-                canvas.Refresh();
+                SetTexture(Image.FromFile(chooseFileDialog.FileName));
             }
         }
 
         private void normalMapButton_Click(object sender, EventArgs e)
         {
+            chooseFileDialog.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.tif";
+            chooseFileDialog.FilterIndex = 1;
+
             if (chooseFileDialog.ShowDialog() == DialogResult.OK)
             {
                 SetNormalMap(Image.FromFile(chooseFileDialog.FileName));
@@ -369,17 +389,17 @@ namespace lab2
                 Math.Abs(selectedPoint.Y - newY) < 1e-2)
                 return;
 
-            if (selectedPoint == TriangleGrid.lightSourcePos)
+            if (selectedPoint == scene.light.Position)
             {
                 if (IsAnimating) return;
 
-                lightXSlider.Value = Math.Clamp((int)(TriangleGrid.lightSourcePos.X * lightXSlider.Maximum), lightXSlider.Minimum, lightXSlider.Maximum);
-                lightYSlider.Value = Math.Clamp((int)(TriangleGrid.lightSourcePos.Y * lightYSlider.Maximum), lightYSlider.Minimum, lightYSlider.Maximum);
+                lightXSlider.Value = Math.Clamp((int)(scene.light.Position.X * lightXSlider.Maximum), lightXSlider.Minimum, lightXSlider.Maximum);
+                lightYSlider.Value = Math.Clamp((int)(scene.light.Position.Y * lightYSlider.Maximum), lightYSlider.Minimum, lightYSlider.Maximum);
 
-                selectedPoint.X = TriangleGrid.lightSourcePos.X = newX;
-                selectedPoint.Y = TriangleGrid.lightSourcePos.Y = newY;
+                selectedPoint.X = scene.light.Position.X = newX;
+                selectedPoint.Y = scene.light.Position.Y = newY;
 
-                TGrid.DrawTriangleGrid(bmp);
+                scene.DrawTriangleGrid();
                 canvas.Refresh();
                 return;
             }
@@ -400,7 +420,7 @@ namespace lab2
 
                         if (newZ > -1 && newZ < 1)
                         {
-                            TGrid.DrawTriangleGrid(bmp);
+                            scene.DrawTriangleGrid();
                             lightSrcGroupBox.Refresh();
                             canvas.Refresh();
 
@@ -423,9 +443,9 @@ namespace lab2
         {
             MousePos = e.Location;
 
-            if (TriangleGrid.lightSourcePos.IsXYCloseToPoint(MousePos))
+            if (scene.light.Position.IsXYCloseToPoint(MousePos, CanvasSize))
             {
-                selectedPoint = TriangleGrid.lightSourcePos;
+                selectedPoint = scene.light.Position;
 
                 MovingVertex = true;
                 (sender as Control).Invalidate();
@@ -436,7 +456,7 @@ namespace lab2
             {
                 for (int j = 0; j <= ctrlPtsNo; j++)
                 {
-                    if (controlPoints[i, j].IsXYCloseToPoint(MousePos))
+                    if (controlPoints[i, j].IsXYCloseToPoint(MousePos, CanvasSize))
                     {
                         selectedPoint = controlPoints[i, j];
 
@@ -461,7 +481,7 @@ namespace lab2
             /// DEBUG
             //{
             //    debugPoint = MousePos;
-            //    TGrid.DrawTriangleGrid(bmp);
+            //    TGrid.DrawTriangleGrid();
             //    canvas.Refresh();
             //}
             /// DEBUG
@@ -476,89 +496,56 @@ namespace lab2
             (sender as Control).Invalidate();
         }
 
-        private void normalMapComboBox_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            switch (normalMapComboBox.SelectedItem)
-            {
-            case "BrickWall":
-                SetNormalMap(Resources.BrickWallNM);
-                return;
-            }
-        }
-
         private void SetNormalMap(Image image)
         {
-            NormalMap = new DirectBitmap(image, CanvasSize + 1, CanvasSize + 1);
             stashedNormalMap = image;
             normalMapPictureBox.Image = image;
-            TriangleGrid.normalMapFlag = 1;
-            TGrid.DrawTriangleGrid(bmp);
+            scene.SetNormalMap(image);
+            scene.DrawTriangleGrid();
+            canvas.Refresh();
+        }
+
+        private void SetTexture(Image image)
+        {
+            stashedTexture = image;
+            texturePictureBox.Image = image;
+            scene.SetTexture(image);
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
         private void replaceNormalVectorsRadioButton_CheckedChanged(object sender, EventArgs e)
         {
-            AddNormalVectors = 0;
-            TGrid.DrawTriangleGrid(bmp);
+            scene.AddNormalVectors = false;
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
         private void addNormalVectorsRadioButton_CheckedChanged(object sender, EventArgs e)
         {
-            AddNormalVectors = 1;
-            TGrid.DrawTriangleGrid(bmp);
+            scene.AddNormalVectors = true;
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
-
-        private void collapsibleGroupBox1_Enter(object sender, EventArgs e)
-        {
-
-        }
-
-        private void triangleDensityGroupBox_Enter(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label6_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void lightZSlider_Scroll(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label11_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void groupBox4_Enter(object sender, EventArgs e)
-        {
-
-        }
-
 
 
         private void triangleGridCheckbox_CheckStateChanged(object sender, EventArgs e)
         {
             if (triangleGridCheckbox.CheckState == CheckState.Unchecked)
             {
-                TGrid.showMesh = TGrid.showTriangleGrid = false;
+                scene.showMesh = scene.showTriangleGrid = false;
             }
             else if (triangleGridCheckbox.CheckState == CheckState.Checked)
             {
-                TGrid.showMesh = false;
-                TGrid.showTriangleGrid = true;
+                scene.showMesh = false;
+                scene.showTriangleGrid = true;
             }
             else if (triangleGridCheckbox.CheckState == CheckState.Indeterminate)
             {
-                TGrid.showMesh = TGrid.showTriangleGrid = true;
+                scene.showMesh = scene.showTriangleGrid = true;
             }
 
-            TGrid.DrawTriangleGrid(bmp);
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
@@ -581,8 +568,8 @@ namespace lab2
             pointHeightSlider.Value = (pointHeightSlider.Maximum + pointHeightSlider.Minimum) / 2;
             pointHeightSlider.Enabled = false;
 
-            TGrid.CalculateVertexGrid();
-            TGrid.DrawTriangleGrid(bmp);
+            scene.CalculateVertexGrid();
+            scene.DrawTriangleGrid();
             canvas.Refresh();
             //PointHeightBox.Refresh();
         }
@@ -599,10 +586,6 @@ namespace lab2
             animationCheckBox.Checked = false;
         }
 
-        private void panel19_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
 
         private void objColorRadioButton_CheckedChanged(object sender, EventArgs e)
         {
@@ -619,9 +602,11 @@ namespace lab2
                 textureComboBox.Enabled = false;
                 textureFileButton.Enabled = false;
                 texturePictureBox.Image = null;
+                scene.IsTextureEnabled = false;
 
-                TriangleGrid.textureFlag = 0;
-                TGrid.DrawTriangleGrid(bmp);
+                objectColorButton.BackColor = scene.material.Color.ToColor();
+
+                scene.DrawTriangleGrid();
                 canvas.Refresh();
             }
         }
@@ -632,22 +617,19 @@ namespace lab2
             {
                 objectColorButton.Enabled = false;
                 objColorRadioButton.Checked = false;
-                objectColorButton.BackColor = Color.White;
+                objectColorButton.BackColor = SystemColors.ButtonShadow;
 
                 textureComboBox.Enabled = true;
                 textureFileButton.Enabled = true;
                 texturePictureBox.Image = stashedTexture ?? null;
+                scene.IsTextureEnabled = true;
 
-                TriangleGrid.textureFlag = 1;
-                TGrid.DrawTriangleGrid(bmp);
+                scene.DrawTriangleGrid();
                 canvas.Refresh();
             }
         }
 
-        private void normalMapCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            normalMapCheckBox_CheckedChanged();
-        }
+        private void normalMapCheckBox_CheckedChanged(object sender, EventArgs e) => normalMapCheckBox_CheckedChanged();
 
         private void normalMapCheckBox_CheckedChanged()
         {
@@ -661,35 +643,73 @@ namespace lab2
             normalMapPictureBox.Enabled = normalMapCheckBox.Checked;
             normalMapCheckBox.Enabled = true;
 
-            TriangleGrid.normalMapFlag = normalMapCheckBox.Checked ? 1 : 0;
-
             if (normalMapCheckBox.Checked)
                 normalMapPictureBox.Image = stashedNormalMap ?? null;
             else
                 normalMapPictureBox.Image = null;
+
+            scene.IsNormalMapEnabled = normalMapCheckBox.Checked;
+            scene.DrawTriangleGrid();
+            canvas.Refresh();
         }
 
         private void kotowskiRadioButton_Click(object sender, EventArgs e)
         {
-            TriangleGrid.zuchowski = false;
-            TGrid.DrawTriangleGrid(bmp);
+            scene.zuchowski = false;
+            scene.DrawTriangleGrid();
             canvas.Refresh();
         }
 
         private void zuchowskiRadioButton_Click(object sender, EventArgs e)
         {
-            TriangleGrid.zuchowski = true;
-            TGrid.DrawTriangleGrid(bmp);
+            scene.zuchowski = true;
+            scene.DrawTriangleGrid();
             canvas.Refresh();
 
         }
 
         private void normalMapStandardCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            TriangleGrid.invertYnormalMap =
-                normalMapStandardCheckBox.Checked ? -1 : 1;
-            TGrid.DrawTriangleGrid(bmp);
+            scene.invertYnormalMap =
+                !normalMapStandardCheckBox.Checked;
+            scene.DrawTriangleGrid();
             canvas.Refresh();
+        }
+
+        private void normalMapComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!normalMapComboBox.Enabled)
+                return;
+
+            normalMapComboBox.Items.Remove(ComboBoxMessage);
+
+            var item = normalMapComboBox.SelectedItem;
+            try
+            {
+                SetNormalMap((Image)Resources.ResourceManager.GetObject((string)item + "NM"));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Exception: " + ex.Message);
+            }
+        }
+
+        private void textureComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!textureComboBox.Enabled)
+                return;
+
+            textureComboBox.Items.Remove(ComboBoxMessage);
+
+            var item = textureComboBox.SelectedItem;
+            try
+            {
+                SetTexture((Image)Resources.ResourceManager.GetObject((string)item + "T"));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Exception: " + ex.Message);
+            }
         }
     }
 }
