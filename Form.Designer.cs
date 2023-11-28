@@ -93,6 +93,7 @@
             label5 = new Label();
             ctrlPointXLabel = new Label();
             label3 = new Label();
+            sphereCheckBox = new CheckBox();
             groupBox1 = new GroupBox();
             panel4 = new Panel();
             mSlider = new TrackBar();
@@ -171,7 +172,7 @@
             splitContainer.Panel2.Controls.Add(groupBox2);
             splitContainer.Panel2.Controls.Add(PointHeightBox);
             splitContainer.Panel2.Controls.Add(groupBox1);
-            splitContainer.Size = new Size(1363, 563);
+            splitContainer.Size = new Size(1252, 582);
             splitContainer.SplitterDistance = 500;
             splitContainer.TabIndex = 0;
             // 
@@ -181,7 +182,7 @@
             canvas.Dock = DockStyle.Fill;
             canvas.Location = new Point(0, 0);
             canvas.Name = "canvas";
-            canvas.Size = new Size(500, 563);
+            canvas.Size = new Size(500, 582);
             canvas.TabIndex = 0;
             canvas.TabStop = false;
             canvas.Paint += canvas_Paint;
@@ -197,7 +198,7 @@
             lightSrcGroupBox.Controls.Add(panel3);
             lightSrcGroupBox.Controls.Add(panel2);
             lightSrcGroupBox.Controls.Add(panel1);
-            lightSrcGroupBox.Location = new Point(3, 312);
+            lightSrcGroupBox.Location = new Point(6, 327);
             lightSrcGroupBox.Name = "lightSrcGroupBox";
             lightSrcGroupBox.Padding = new Padding(3, 9, 3, 8);
             lightSrcGroupBox.Size = new Size(276, 170);
@@ -474,7 +475,7 @@
             triangleDensityGroupBox.Controls.Add(horizontalDensitySlider);
             triangleDensityGroupBox.Controls.Add(label2);
             triangleDensityGroupBox.Controls.Add(label1);
-            triangleDensityGroupBox.Location = new Point(3, 127);
+            triangleDensityGroupBox.Location = new Point(6, 148);
             triangleDensityGroupBox.Name = "triangleDensityGroupBox";
             triangleDensityGroupBox.Padding = new Padding(3, 9, 3, 3);
             triangleDensityGroupBox.Size = new Size(276, 179);
@@ -780,7 +781,7 @@
             // groupBox2
             // 
             groupBox2.Controls.Add(lightColorButton);
-            groupBox2.Location = new Point(3, 488);
+            groupBox2.Location = new Point(6, 503);
             groupBox2.Name = "groupBox2";
             groupBox2.Padding = new Padding(40, 6, 40, 6);
             groupBox2.Size = new Size(276, 53);
@@ -809,9 +810,10 @@
             PointHeightBox.Controls.Add(label5);
             PointHeightBox.Controls.Add(ctrlPointXLabel);
             PointHeightBox.Controls.Add(label3);
-            PointHeightBox.Location = new Point(3, 3);
+            PointHeightBox.Controls.Add(sphereCheckBox);
+            PointHeightBox.Location = new Point(6, 3);
             PointHeightBox.Name = "PointHeightBox";
-            PointHeightBox.Size = new Size(276, 121);
+            PointHeightBox.Size = new Size(276, 142);
             PointHeightBox.TabIndex = 1;
             PointHeightBox.TabStop = false;
             PointHeightBox.Text = "Control point height";
@@ -829,7 +831,7 @@
             // pointHeightSlider
             // 
             pointHeightSlider.Dock = DockStyle.Bottom;
-            pointHeightSlider.Location = new Point(3, 73);
+            pointHeightSlider.Location = new Point(3, 75);
             pointHeightSlider.Maximum = 100;
             pointHeightSlider.Minimum = -100;
             pointHeightSlider.Name = "pointHeightSlider";
@@ -888,6 +890,18 @@
             label3.Size = new Size(17, 15);
             label3.TabIndex = 0;
             label3.Text = "X:";
+            // 
+            // sphereCheckBox
+            // 
+            sphereCheckBox.AutoSize = true;
+            sphereCheckBox.Dock = DockStyle.Bottom;
+            sphereCheckBox.Location = new Point(3, 120);
+            sphereCheckBox.Name = "sphereCheckBox";
+            sphereCheckBox.Size = new Size(270, 19);
+            sphereCheckBox.TabIndex = 8;
+            sphereCheckBox.Text = "Sphere";
+            sphereCheckBox.UseVisualStyleBackColor = true;
+            sphereCheckBox.CheckedChanged += sphereCheckBox_CheckedChanged;
             // 
             // groupBox1
             // 
@@ -1019,7 +1033,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1363, 563);
+            ClientSize = new Size(1252, 582);
             Controls.Add(splitContainer);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
@@ -1162,5 +1176,6 @@
         private Panel panel11;
         private Panel panel10;
         private PictureBox normalMapPictureBox;
+        private CheckBox sphereCheckBox;
     }
 }
