@@ -62,7 +62,7 @@ namespace lab2
 
             InitializeParameters();
 
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
 
             textureComboBox.Text = ComboBoxMessage;
             normalMapComboBox.Text = ComboBoxMessage;
@@ -186,7 +186,7 @@ namespace lab2
             ctrlPointZLabel.Text = String.Format("{0:F}", selectedPoint.Z);
 
             scene.CalculateVertexGrid();
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
 
             canvas.Refresh();
         }
@@ -196,7 +196,7 @@ namespace lab2
             horizontalDensityLabel.Text = $"{horizontalDensitySlider.Value}";
 
             scene.UpdateHorizontally(horizontalDensitySlider.Value);
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
 
             canvas.Refresh();
         }
@@ -206,7 +206,7 @@ namespace lab2
             verticalDensityLabel.Text = $"{verticalDensitySlider.Value}";
 
             scene.UpdateVertically(verticalDensitySlider.Value);
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
 
             canvas.Refresh();
         }
@@ -239,7 +239,7 @@ namespace lab2
 
             lightXLabel.Text = string.Format("X: {0:F}", scene.light.Position.X);
 
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
@@ -250,7 +250,7 @@ namespace lab2
 
             lightYLabel.Text = string.Format("Y: {0:F}", scene.light.Position.Y);
 
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
@@ -260,28 +260,28 @@ namespace lab2
 
             lightZLabel.Text = string.Format("Z: {0:F}", scene.light.Position.Z);
 
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
         private void kDSlider_ValueChanged(object sender, EventArgs e)
         {
             scene.material.kD = kDSlider.Value / 100.0f;
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
         private void kSSlider_ValueChanged(object sender, EventArgs e)
         {
             scene.material.kS = kSSlider.Value / 100.0f;
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
         private void mSlider_ValueChanged(object sender, EventArgs e)
         {
             scene.material.m = mSlider.Value;
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
@@ -295,14 +295,14 @@ namespace lab2
                     colorDialog.Color.B / 255.0f);
                 lightColorButton.BackColor = colorDialog.Color;
             }
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
         private void normalVectorsCheckbox_CheckedChanged(object sender, EventArgs e)
         {
             scene.showNormalVectors = normalVectorsCheckbox.Checked;
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
@@ -322,13 +322,12 @@ namespace lab2
                 objectColorButton.BackColor = colorDialog.Color;
                 objectColorButton.Refresh();
             }
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
         private float angle = 0f;
         private float k = 7;
-
         private void AnimationTimer_Tick(object sender, EventArgs e)
         {
             float newX = 0.5f + 0.3f * (float)Math.Sin(angle / k) * (float)Math.Cos(angle);
@@ -375,7 +374,7 @@ namespace lab2
         {
             MousePos = e.Location;
 
-            if (MovingVertex == false)
+            if (!MovingVertex)
             {
                 canvas.Refresh();
                 return;
@@ -399,10 +398,13 @@ namespace lab2
                 selectedPoint.X = scene.light.Position.X = newX;
                 selectedPoint.Y = scene.light.Position.Y = newY;
 
-                scene.DrawTriangleGrid();
+                scene.DrawScene();
                 canvas.Refresh();
                 return;
             }
+
+            if (scene.SphereSurface)
+                return;
 
             for (int i = 0; i <= ctrlPtsNo; i++)
             {
@@ -420,7 +422,7 @@ namespace lab2
 
                         if (newZ > -1 && newZ < 1)
                         {
-                            scene.DrawTriangleGrid();
+                            scene.DrawScene();
                             lightSrcGroupBox.Refresh();
                             canvas.Refresh();
 
@@ -478,14 +480,6 @@ namespace lab2
 
             selectedPoint = null;
 
-            /// DEBUG
-            //{
-            //    debugPoint = MousePos;
-            //    TGrid.DrawTriangleGrid();
-            //    canvas.Refresh();
-            //}
-            /// DEBUG
-
             ctrlPointXLabel.Text = "";
             ctrlPointYLabel.Text = "";
             ctrlPointZLabel.Text = "";
@@ -501,7 +495,7 @@ namespace lab2
             stashedNormalMap = image;
             normalMapPictureBox.Image = image;
             scene.SetNormalMap(image);
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
@@ -510,21 +504,21 @@ namespace lab2
             stashedTexture = image;
             texturePictureBox.Image = image;
             scene.SetTexture(image);
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
         private void replaceNormalVectorsRadioButton_CheckedChanged(object sender, EventArgs e)
         {
             scene.AddNormalVectors = false;
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
         private void addNormalVectorsRadioButton_CheckedChanged(object sender, EventArgs e)
         {
             scene.AddNormalVectors = true;
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
@@ -545,7 +539,7 @@ namespace lab2
                 scene.showMesh = scene.showTriangleGrid = true;
             }
 
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
@@ -569,7 +563,7 @@ namespace lab2
             pointHeightSlider.Enabled = false;
 
             scene.CalculateVertexGrid();
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
             //PointHeightBox.Refresh();
         }
@@ -606,7 +600,7 @@ namespace lab2
 
                 objectColorButton.BackColor = scene.material.Color.ToColor();
 
-                scene.DrawTriangleGrid();
+                scene.DrawScene();
                 canvas.Refresh();
             }
         }
@@ -624,7 +618,7 @@ namespace lab2
                 texturePictureBox.Image = stashedTexture ?? null;
                 scene.IsTextureEnabled = true;
 
-                scene.DrawTriangleGrid();
+                scene.DrawScene();
                 canvas.Refresh();
             }
         }
@@ -649,21 +643,21 @@ namespace lab2
                 normalMapPictureBox.Image = null;
 
             scene.IsNormalMapEnabled = normalMapCheckBox.Checked;
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
         private void kotowskiRadioButton_Click(object sender, EventArgs e)
         {
             scene.zuchowski = false;
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
         private void zuchowskiRadioButton_Click(object sender, EventArgs e)
         {
             scene.zuchowski = true;
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
 
         }
@@ -672,7 +666,7 @@ namespace lab2
         {
             scene.invertYnormalMap =
                 !normalMapStandardCheckBox.Checked;
-            scene.DrawTriangleGrid();
+            scene.DrawScene();
             canvas.Refresh();
         }
 
@@ -710,6 +704,19 @@ namespace lab2
             {
                 MessageBox.Show("Exception: " + ex.Message);
             }
+        }
+
+        private void sphereCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            foreach (Control control in PointHeightBox.Controls)
+            {
+                if (control != sphereCheckBox)
+                    control.Enabled = !sphereCheckBox.Checked;
+            }
+
+            scene.SphereSurface = sphereCheckBox.Checked;
+            scene.DrawScene();
+            canvas.Refresh();
         }
     }
 }

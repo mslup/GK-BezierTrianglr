@@ -27,6 +27,8 @@ namespace lab2
         public bool IsTextureEnabled = false;
         public bool IsNormalMapEnabled = false;
 
+        public bool SphereSurface = false;
+
         public bool AddNormalVectors;
         public bool showNormalVectors;
         public bool showTriangleGrid;
@@ -64,7 +66,7 @@ namespace lab2
             Bmp = new DirectBitmap(size + 1, size + 1);
         }
 
-        public void DrawTriangleGrid()
+        public void DrawScene()
         {
             invertY = invertYnormalMap ? 1 : -1;
             addNormalVectors = AddNormalVectors ? 1 : 0;
@@ -100,6 +102,16 @@ namespace lab2
                         controlPoints);
                 });
             });
+
+
+            //for (int i = 0; i < VerticalDensity + 2; i++)
+            //{
+            //    for (int j = 0; j < HorizontalDensity + 2; j++)
+            //    {
+            //        Console.Write(String.Format("{0}, {1}, {2:F2}", i, j, grid[i, j].sphereZ) + "\t");
+            //    }
+            //    Console.WriteLine();
+            //}
 
         }
 
@@ -258,7 +270,7 @@ namespace lab2
             {
                 //for (int j = 0; j < HorizontalDensity; j++)
                 Parallel.For(0, HorizontalDensity, j =>
-                {
+                    {
                     FillTriangle(i, j, 1, 0); //bottom
                     FillTriangle(i, j, 0, 1); //top
                 }
@@ -308,13 +320,16 @@ namespace lab2
             float X = 1.0f * x / size;
             float Y = 1.0f * y / size;
 
+            if (SphereSurface && !Sphere.InsideSphere(X, Y))
+                return Color.White;
+
             (float lambda1, float lambda2, float lambda3) =
                 CalculateBarycentricCoords(P, X, Y);
 
             (float x, float y, float z) pointCoords = (X, Y,
-                lambda1 * P[0].z +
-                lambda2 * P[1].z +
-                lambda3 * P[2].z
+                lambda1 * (SphereSurface ? P[0].sphereZ : P[0].z) +
+                lambda2 * (SphereSurface ? P[1].sphereZ : P[1].z) +
+                lambda3 * (SphereSurface ? P[2].sphereZ : P[2].z)
             );
 
             (float x, float y, float z) lightVector = Normalize((
@@ -323,17 +338,47 @@ namespace lab2
                 light.Position.Z - pointCoords.z
             ));
 
+            Point3D N0, N1, N2, P0, P1, P2;
+
+            if (SphereSurface)
+            {
+                N0 = P[0].sphereN;
+                N1 = P[1].sphereN;
+                N2 = P[2].sphereN;
+                P0 = P[0].sphereP;
+                P1 = P[1].sphereP;
+                P2 = P[2].sphereP;
+            }
+            else
+            {
+                N0 = P[0].N;
+                N1 = P[1].N;
+                N2 = P[2].N;
+                P0 = P[0].P;
+                P1 = P[1].P;
+                P2 = P[2].P;
+            }
+
             (float x, float y, float z) normalVector = Normalize((
-                lambda1 * P[0].N.X + lambda2 * P[1].N.X + lambda3 * P[2].N.X,
-                lambda1 * P[0].N.Y + lambda2 * P[1].N.Y + lambda3 * P[2].N.Y,
-                lambda1 * P[0].N.Z + lambda2 * P[1].N.Z + lambda3 * P[2].N.Z
+                lambda1 * N0.X + lambda2 * N1.X + lambda3 * N2.X,
+                lambda1 * N0.Y + lambda2 * N1.Y + lambda3 * N2.Y,
+                lambda1 * N0.Z + lambda2 * N1.Z + lambda3 * N2.Z
             ));
 
-            (float x, float y, float z) tangentVector = Normalize((
-                lambda1 * P[0].P.X + lambda2 * P[1].P.X + lambda3 * P[2].P.X,
-                lambda1 * P[0].P.Y + lambda2 * P[1].P.Y + lambda3 * P[2].P.Y,
-                lambda1 * P[0].P.Z + lambda2 * P[1].P.Z + lambda3 * P[2].P.Z
+            (float x, float y, float z) tangentVector;
+
+            if (!SphereSurface)
+            {
+                tangentVector = Normalize((
+                    lambda1 * P0.X + lambda2 * P1.X + lambda3 * P2.X,
+                    lambda1 * P0.Y + lambda2 * P1.Y + lambda3 * P2.Y,
+                    lambda1 * P0.Z + lambda2 * P1.Z + lambda3 * P2.Z
                 ));
+            }
+            else
+            {
+                tangentVector = (0, 0, 0);
+            }
 
 
             if (IsNormalMapSet && IsNormalMapEnabled)
@@ -425,7 +470,7 @@ namespace lab2
 
             (float x, float y, float z) B;
 
-            if (zuchowski)
+            if (zuchowski && !SphereSurface)
                 B = tangentVector;
             else
                 B = CalculateB(v);

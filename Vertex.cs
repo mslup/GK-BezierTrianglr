@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -11,8 +12,11 @@ namespace lab2
     {
         // maybe make it just Point3d
         public float x, y, z;
+        public float sphereZ;
         public Point3D N;
         public Point3D P;
+        public Point3D sphereN;
+        public Point3D sphereP;
 
         public int XPixel(int size) => (int)(x * size);
         public int YPixel(int size) => (int)(y * size);
@@ -23,7 +27,10 @@ namespace lab2
             this.y = y;
             this.z = z;
 
+            sphereZ = Sphere.GetHeight(x, y);
+
             N = BezierSurface.NormalVector(x, y, controlPoints);
+            sphereN = Sphere.NormalVector(x, y, sphereZ);
             P = new Point3D(0, 1, BezierSurface.TangentVector_dV_Z(x, y, controlPoints));
         }
     }
